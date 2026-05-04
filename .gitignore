@@ -1,0 +1,26 @@
+scratch/
+sessions/
+.propel/
+.claude/
+propel/
+
+# Project artifacts
+outputs/
+data/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+build/
+dist/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/

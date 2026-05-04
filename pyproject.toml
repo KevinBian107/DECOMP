@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "decomp"
+version = "0.0.1"
+description = "V1-vs-cerebellum movement signal decomposition on the IBL Brain-Wide Map (course project)."
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [{ name = "Kaiwen Bian", email = "kaiwen@talmolab.org" }]
+license = { text = "MIT" }
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "scikit-learn",
+    "statsmodels",
+    "matplotlib",
+    "seaborn",
+    "tqdm",
+    "pyarrow",
+]
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]

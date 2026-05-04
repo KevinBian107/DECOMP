@@ -1,0 +1,30 @@
+name: decomp
+channels:
+  - conda-forge
+dependencies:
+  - python=3.10
+  - numpy
+  - scipy
+  - pandas
+  - scikit-learn
+  - statsmodels
+  - numba
+  - matplotlib
+  - seaborn
+  - jupyter
+  - jupyterlab
+  - ipykernel
+  - tqdm
+  - pyarrow
+  - h5py
+  - pip
+  - pip:
+      - ONE-api
+      - ibllib
+      - iblatlas
+      - neurencoding
+      - dPCA
+      - git+https://github.com/int-brain-lab/paper-brain-wide-map.git
+      - git+https://github.com/MouseLand/neuropop.git
+      - git+https://github.com/gallantlab/pyrcca.git
+      - -e .
