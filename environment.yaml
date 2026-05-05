@@ -17,8 +17,11 @@ dependencies:
   - tqdm
   - pyarrow
   - h5py
+  - imageio
+  - pillow
   - pip
   - pip:
+      - imageio-ffmpeg
       - ONE-api
       - ibllib
       - iblatlas
