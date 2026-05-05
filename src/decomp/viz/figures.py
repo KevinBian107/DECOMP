@@ -70,7 +70,6 @@ def _save(fig: plt.Figure, name: str, out_dir: Path) -> None:
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     fig.savefig(out_dir / f"{name}.png")
-    fig.savefig(out_dir / f"{name}.pdf")
     plt.close(fig)
 
 
@@ -127,26 +126,75 @@ def fig01_glm_dr2_per_region(df: pd.DataFrame, out_dir: Path = Path("outputs")) 
     _save(fig, "fig01_glm_dr2_per_region", out_dir)
 
 
-# ---- fig02: SVCA reliability spectrum ----------------------------------------------------
-def fig02_svca_reliability(svca_results: dict, out_dir: Path = Path("outputs")) -> None:
-    fig, ax = plt.subplots(figsize=(8.2, 5.4))
-    for region, res in svca_results.items():
-        rel = np.asarray(res.reliability)
-        x = np.arange(1, len(rel) + 1)
-        ax.plot(
-            x, rel,
-            label=region,
-            color=_REGION_COLORS.get(region, "#444444"),
-            lw=2.2, marker="o", ms=5, mec="white", mew=0.8,
-        )
-    ax.axhline(0.5, ls="--", color="#888888", lw=1.2, label="reliability = 0.5")
-    ax.set_xlabel("Component index $k$")
-    ax.set_ylabel("Reliability  $\\rho^{\\mathrm{SVCA}}_k = \\mathrm{scov}_k / \\mathrm{varcov}_k$")
-    ax.set_title("SVCA reliability spectrum per region")
-    ax.set_ylim(-0.05, 1.05)
-    ax.set_xlim(0.5, max(20, len(rel) + 0.5))
-    ax.legend(loc="upper right", title="Region")
-    _strip_box(ax)
+# ---- fig02: SVCA reliability spectrum (per pair session) ---------------------------------
+def fig02_svca_reliability(svca_results: dict | list,
+                            out_dir: Path = Path("outputs")) -> None:
+    """SVCA reliability spectrum per region, faceted by pair session.
+
+    `svca_results` accepts either:
+      - dict[region -> SVCAResult-like]              (single-session legacy form)
+      - list[(eid, n_units_dict, dict[region -> SVCAResult-like])]  (per-session faceted)
+
+    Each panel shows VISp and CB reliability spectra for one pair session, with
+    Stringer's 0.5 threshold as a reference and an annotation of how many components
+    clear it.
+    """
+    # normalize to per-session list
+    if isinstance(svca_results, dict):
+        sessions = [(None, {}, svca_results)]
+    else:
+        sessions = list(svca_results)
+
+    n = len(sessions)
+    fig, axes = plt.subplots(1, n, figsize=(5.6 * n, 5.0), sharey=True, squeeze=False)
+
+    for ax, (eid, n_units, regions) in zip(axes.ravel(), sessions):
+        max_k = 0
+        legend_lines: list[str] = []
+        for region, res in regions.items():
+            rel = np.asarray(res.reliability)
+            x = np.arange(1, len(rel) + 1)
+            color = _REGION_COLORS.get(region, "#444444")
+            ax.plot(x, rel, color=color, lw=2.2, marker="o", ms=6,
+                    mec="white", mew=0.8, label=region)
+            n_above = int((rel > 0.5).sum())
+            max_k = max(max_k, len(rel))
+            top1 = float(rel[0]) if len(rel) else float("nan")
+            legend_lines.append((color, region, n_above, top1))
+
+        ax.axhline(0.5, ls="--", color="#666666", lw=1.0)
+        ax.text(0.985, 0.515, "Stringer 0.5",
+                transform=ax.get_yaxis_transform(),
+                fontsize=10, color="#666666", ha="right", va="bottom")
+
+        # right-side info block: per-region #components above 0.5 and top-1 reliability
+        for j, (color, region, n_above, top1) in enumerate(legend_lines):
+            ax.text(
+                0.04, 0.95 - 0.08 * j,
+                f"{region}:  $\\rho_1$ = {top1:.2f}   ·   {n_above} comp > 0.5",
+                transform=ax.transAxes, ha="left", va="top",
+                color=color, fontsize=11.5, fontweight="regular",
+            )
+
+        ax.set_xlabel("Component index $k$")
+        if ax is axes.ravel()[0]:
+            ax.set_ylabel("Reliability  $\\rho^{\\mathrm{SVCA}}_k$")
+        ax.set_xlim(0.5, max(15, max_k + 0.5))
+        ax.set_ylim(-0.05, 1.0)
+
+        title = ""
+        if eid is not None:
+            title = eid[:8]
+            if n_units:
+                pieces = " · ".join(f"{r}: {nu}u" for r, nu in n_units.items() if r in regions)
+                title = f"{title}   ({pieces})"
+        ax.set_title(title or "SVCA reliability", fontsize=14)
+        _strip_box(ax)
+
+    fig.suptitle(
+        "SVCA reliability per pair session  ·  V1 vs CB",
+        y=1.02, fontsize=18,
+    )
     fig.tight_layout()
     _save(fig, "fig02_svca_reliability", out_dir)
 

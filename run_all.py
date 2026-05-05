@@ -63,7 +63,8 @@ def main(args: argparse.Namespace) -> None:
 
     # ---- Stage 1: Session selection ----------------------------------------------------------
     log.info("Stage 1: session selection")
-    plan = select_sessions(one, target_n=3, freeze=args.freeze, cache_dir=CACHE_DIR)
+    plan = select_sessions(one, target_n=3, freeze=args.freeze, cache_dir=CACHE_DIR,
+                            n_per_region=args.max_pool)
     log.info("  %s", plan.strategy_note)
 
     pair_eids = plan.pair_eids[: args.max_pair]
@@ -78,7 +79,8 @@ def main(args: argparse.Namespace) -> None:
 
     glm_rows: list[pd.DataFrame] = []
     cca_rows: list[pd.DataFrame] = []
-    svca_for_fig: dict[str, object] = {}
+    # Per-pair-session SVCA bundle for fig02. Each entry: (eid, n_units_dict, region_dict).
+    svca_per_session: list[tuple[str, dict[str, int], dict[str, object]]] = []
 
     # Track which ROIs each session should contribute to GLM ΔR²
     session_glm_rois: dict[str, set[str]] = {}
@@ -118,26 +120,33 @@ def main(args: argparse.Namespace) -> None:
         if eid in pair_eids and args.rerun_from in (None, "data", "glm", "svca", "cca"):
             svca_results = run_session_svca(binned, cache_dir=CACHE_DIR,
                                              random_state=args.seed)
-            for roi, res in svca_results.items():
-                svca_for_fig.setdefault(roi, res)
 
-            if args.rerun_from in (None, "data", "glm", "svca", "cca"):
-                pair_rois = ["VISp", "CB"]
-                pair_svca = {r: svca_results[r] for r in pair_rois if r in svca_results}
-                if len(pair_svca) == 2:
-                    cca_df = run_session_cca(binned, pair_svca, cache_dir=CACHE_DIR,
-                                             n_components=args.n_components,
-                                             n_surrogates=args.n_surrogates,
-                                             random_state=args.seed)
-                    cca_rows.append(cca_df)
+            pair_rois = ["VISp", "CB"]
+            pair_svca = {r: svca_results[r] for r in pair_rois if r in svca_results}
+            n_units = {r: int(binned.spikes_by_roi[r].shape[0])
+                       for r in pair_rois if r in binned.spikes_by_roi}
+            if pair_svca:
+                svca_per_session.append((eid, n_units, pair_svca))
+
+            if len(pair_svca) == 2:
+                cca_df = run_session_cca(binned, pair_svca, cache_dir=CACHE_DIR,
+                                         n_components=args.n_components,
+                                         n_surrogates=args.n_surrogates,
+                                         random_state=args.seed)
+                cca_rows.append(cca_df)
 
     glm_all = pd.concat(glm_rows, ignore_index=True) if glm_rows else pd.DataFrame()
     cca_all = pd.concat(cca_rows, ignore_index=True) if cca_rows else pd.DataFrame()
 
+    # Order pair sessions in fig02 to match fig03 (sorted by eid)
+    if cca_rows:
+        eid_order = list(cca_all["eid"].unique())
+        svca_per_session.sort(key=lambda t: eid_order.index(t[0]) if t[0] in eid_order else 99)
+
     if not glm_all.empty:
         fig01_glm_dr2_per_region(glm_all, OUT_DIR)
-    if svca_for_fig:
-        fig02_svca_reliability(svca_for_fig, OUT_DIR)
+    if svca_per_session:
+        fig02_svca_reliability(svca_per_session, OUT_DIR)
     if not cca_all.empty:
         fig03_cca_canonical_correlations(cca_all, OUT_DIR)
         fig04_pcca_vs_cca(cca_all, OUT_DIR)
