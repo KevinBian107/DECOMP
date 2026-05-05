@@ -74,7 +74,9 @@ def fit_region(X: np.ndarray, Y: np.ndarray, design: DesignSpec,
         Ytr, Yte = Y[tr], Y[te]
 
         m_full = Ridge(alpha=alpha).fit(Xtr, Ytr)
-        Yhat = m_full.predict(Xte)
+        Yhat = np.atleast_2d(m_full.predict(Xte))
+        if Yhat.shape[0] == 1 and Yte.shape[0] != 1:
+            Yhat = Yhat.T
         fold_full[f] = _r2_per_neuron(Yte, Yhat)
 
         for g, idx in design.groups.items():
@@ -83,7 +85,10 @@ def fit_region(X: np.ndarray, Y: np.ndarray, design: DesignSpec,
                 fold_drop[g][f] = 0.0
                 continue
             m_drop = Ridge(alpha=alpha).fit(Xtr[:, keep], Ytr)
-            fold_drop[g][f] = _r2_per_neuron(Yte, m_drop.predict(Xte[:, keep]))
+            Yhat_drop = np.atleast_2d(m_drop.predict(Xte[:, keep]))
+            if Yhat_drop.shape[0] == 1 and Yte.shape[0] != 1:
+                Yhat_drop = Yhat_drop.T
+            fold_drop[g][f] = _r2_per_neuron(Yte, Yhat_drop)
 
     full_R2 = fold_full.mean(axis=0)
     deltas = {g: full_R2 - fold_drop[g].mean(axis=0) for g in design.groups}
