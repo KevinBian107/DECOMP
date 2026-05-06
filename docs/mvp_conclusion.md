@@ -2,84 +2,62 @@
 
 ## Bottom line
 
-On the IBL Brain-Wide Map (2023_12 freeze), the V1–cerebellum shared movement subspace is **not just a copy of one global running/arousal state.** It survives partialling out wheel velocity and pupil diameter. At the same time, V1 and cerebellum sit at very different points on the per-region "how movement-tuned is this neuron" spectrum — V1 has a small, broadly distributed movement signal; cerebellum has a strong one with a long upper tail.
+On the IBL Brain-Wide Map (2023_12 freeze), the V1–cerebellum shared movement subspace is **not just a copy of one global running/arousal state**. It survives partialling out wheel velocity and pupil diameter on the two informative pair sessions available in this dataset (survival ratios 0.88 and 0.98). At the same time, V1 and cerebellum sit at very different points on the per-neuron "how movement-tuned is this unit" spectrum — V1's movement signal is small and broadly distributed, cerebellum's is strong with a long upper tail. **Together these results suggest that V1 and cerebellum are running distinct movement-related computations whose codes nonetheless share representational structure that is not reducible to the standard scalar measures of locomotion + arousal.**
 
-**Together these results suggest that V1 and cerebellum are running distinct movement-related computations, but their codes share representational structure that is not reducible to the standard scalar measures of locomotion + arousal.**
-
-Run scope:
+The MVP run analysed 4,286 neurons across 41 sessions of the BWM 2023_12 release. The cross-region question — V1↔CB — is bottlenecked by the dataset itself: only 3 sessions in the entire freeze contain simultaneous V1 + cerebellum Neuropixels coverage, and only 1 of those is unambiguously strong (CSH_ZAD_022, 63 V1 + 46 CB units). The remaining two are mixed (51 V1 / 9 CB) and uninformative (6 V1 / 36 CB; null engulfs signal). Everything below is conditioned on that hard sample-size limit.
 
 | Item | Value |
 |---|---|
-| Total neurons fit (GLM) | 4286 |
+| Total neurons fit (GLM) | 4,286 |
 | Unique sessions analyzed | 41 |
 | V1+CB pair sessions (CCA / pCCA / SVCA) | 3 (dataset hard ceiling) |
 | Per-region GLM pool | 10 sessions per ROI × 4 ROIs |
 | Bin size | 20 ms |
 | Data freeze | `2023_12_bwm_release` |
 
----
-
-## fig01 — per-region GLM ΔR² (literature-reproduction sanity check)
-
-![Per-region GLM ΔR²](figures/fig01_glm_dr2_per_region.png)
-
-**What it shows.** Per-neuron cross-validated leave-one-group-out ΔR² for three kernel groups (Movement, Stimulus, Choice), boxed by region. Translucent dots are the actual per-neuron values across 41 sessions. Each panel: 4 boxes, one per region — VISp (V1), CB (cerebellum), MO (motor cortex), CA1 (hippocampus).
-
-**Conclusions.**
-- Movement encoding is structured across regions: medians and upper tails rank **CB ≈ MO > VISp > CA1.** This reproduces the Wang–Druckmann 2026 / IBL 2025 finding that movement variance is structured across the brain with stronger encoding closer to the motor periphery.
-- Both **CB and MO show long upper tails** of strongly movement-tuned neurons reaching ΔR² ≈ 0.05–0.12. With 10 sessions sampled per region, CB and MO are essentially tied at the median; CB's tail is slightly heavier.
-- **V1 has a small but genuine movement signal**, mostly contained below ΔR² = 0.025. Consistent with arousal-driven gain modulation of V1 responses (Niell & Stryker 2010), not strong feature encoding of movement.
-- **CA1 has essentially no movement signal at 20 ms resolution.** Consistent with hippocampal locomotion gating living at theta frequencies that our basis kernels don't capture well.
-- Stimulus and Choice panels behave as expected: stimulus variance shows up in V1 and (modestly) in CB/MO; choice variance is near zero everywhere because choice is rare per-trial at this temporal resolution.
-
-**Why this matters.** This is the **trust-the-data check**. The literature ranking holds, so our session selection, spike binning, design matrix construction, and ΔR² computation are honest. Everything downstream inherits trust from fig01 passing.
+The argument unfolds across four figures, each answering a question the previous one cannot.
 
 ---
 
-## fig02 — SVCA reliability per V1+CB pair session
+## The dataset behaves the way the literature predicts
 
-![SVCA reliability per pair session](figures/fig02_svca_reliability.png)
+Before trusting any cross-region comparison, the per-region encoding GLM has to reproduce the known fact that movement encoding is structured across the brain — stronger toward the motor periphery, weaker toward sensory and hippocampal regions. We fit per-neuron Ridge regression with raised-cosine kernels for stimulus, first-movement, feedback, choice, wheel, motion energy, pupil, and licks, then computed leave-one-group-out cross-validated ΔR² for movement, stimulus, and choice kernel groups.
 
-**What it shows.** Three panels, one per V1+CB pair session in BWM 2023_12 (the only sessions with simultaneous V1 and cerebellum recordings). Each panel shows the Stringer 2019 reliability score $\rho^{\mathrm{SVCA}}_k = \mathrm{scov}_k / \mathrm{varcov}_k$ vs component index $k$ for VISp (blue) and CB (red), with the 0.5 reference threshold and per-region annotations of $\rho_1$ and the count of components above threshold.
+![Per-region GLM ΔR²](figures/mvp/fig01_glm_dr2_per_region.png)
 
-**Conclusions.**
-- **`09b2c4d1`** (51 V1, 9 CB units): both regions max out at $\rho_1 \approx 0.41 / 0.23$, **0 components above 0.5**.
-- **`41431f53`** (63 V1, 46 CB — the strong session): $\rho_1 \approx 0.57 / 0.52$, **1 + 1 components above 0.5** — just barely.
-- **`a7763417`** (6 V1, 36 CB): VISp $\rho_1 = 0.21$ (only 6 units, expected to be noisy), but **CB $\rho_1 = 0.82$ with 2 components above 0.5** — the strongest reliable subspace anywhere in the dataset, on the session whose V1 side is too small to use.
-- Across all three pair sessions, only ~3 components total clear Stringer's 0.5 threshold. This is mostly a *small-population* fact (≤63 V1 and ≤46 CB units per session), not a *weak-biology* fact — reliability has a mechanical ceiling tied to how well the cross-half estimate can be measured at small N.
-
-**Why this matters.** This is the **honesty disclosure**. CCA in fig03 is operating on real but moderately-noisy population coordinates, not crystal-clean state-space summaries. The right framing for fig04 is "shared canonical correlations above null," not "reliable shared subspace." The phase-shuffle null in fig03 doesn't depend on SVCA reliability, so the directional claim is intact, but the strength language must be honest about the underlying coordinates.
+The boxes are tightly compressed near zero — that's expected, because at 20 ms bins most spike-count variance is irreducible Poisson noise. The interesting structure lives in the *upper tails*. In the Movement panel, MO has the longest upper whisker, with neurons reaching ΔR²_movement ≈ 0.05–0.12. CB follows closely, V1 has a short upper tail capped near 0.02, and CA1 is essentially flat against zero. This reproduces the Wang–Druckmann 2026 / IBL 2025 ranking (MO ≥ CB > V1 > CA1) and confirms our session selection, spike binning, design-matrix construction, and ΔR² computation are honest. The Stimulus panel correctly shows V1's modest tail (visual cortex carries stim variance), and the Choice panel sits near zero everywhere, as expected for a rare per-trial event at this temporal resolution. With this sanity check passing, every downstream claim inherits trustworthy machinery.
 
 ---
 
-## fig03 — cross-region canonical correlations vs phase-shuffle null
+## Each region has a real, if modest, low-dimensional population state
 
-![Canonical correlations](figures/fig03_cca_canonical_correlations.png)
+Cross-region CCA (next stage) is meaningless if the inputs to it are noise. We need to know that V1's leading population modes and CB's leading population modes are reproducible across cell halves on held-out time — i.e. real biological structure, not a PCA artefact of the particular neurons we recorded. SVCA (Stringer 2019) does this by splitting cells in half and time in half, fitting components on one cell-half × training-time block, and asking whether the held-out time block has the same component structure on the other cell-half. The reliability score $\rho^{\mathrm{SVCA}}_k = \mathrm{scov}_k / \mathrm{varcov}_k$ approaches 1 for real shared structure and 0 for noise.
 
-**What it shows.** Three panels, one per V1+CB pair session. In each panel:
-- **Blue circles** = $\rho_k^{\mathrm{CCA}}$, cross-validated canonical correlations between V1's SVCA scores and CB's SVCA scores at component $k$.
-- **Red squares** = $\rho_k^{\mathrm{pCCA}}$, the same with wheel velocity and pupil diameter regressed out of both populations on the training fold and applied to the held-out test fold.
-- **Gray shaded band** = phase-shuffle 99% null (Fourier-phase-randomized surrogates that preserve each channel's spectrum but break cross-region temporal alignment).
+![SVCA reliability per pair session](figures/mvp/fig02_svca_reliability.png)
 
-**Conclusions.**
-- **`41431f53` (strong, 63 V1 + 46 CB):** $\rho_1 \approx 0.34$ just above null 0.32, $\rho_2 \approx 0.31$ well above null 0.15, with $\rho_3$–$\rho_5$ above their (tighter) nulls. **5 components of genuine V1↔CB shared structure.**
-- **`09b2c4d1` (mixed, 51 V1 + 9 CB):** $\rho_1 \approx 0.27$ above null 0.08, $\rho_2 \approx 0.12$ above 0.04, $\rho_3 \approx 0.06$ above 0.02. **3 components above null.**
-- **`a7763417` (weak, 6 V1 + 36 CB):** the gray null band is enormous (the small V1 population produces a wide null), and observed $\rho_k$ never escape it. **No reliable shared structure detectable** — this session is uninformative for the cross-region question.
-- Crucially, in the two informative sessions, the **CCA and pCCA curves overlap each other almost perfectly** — partialling out wheel + pupil barely moves the canonical correlations.
+This is a sobering panel. Across the three V1+CB pair sessions, almost every component sits **below** Stringer's 0.5 threshold. The strong session (`41431f53`, 63 V1 + 46 CB units) just barely clears it: V1's leading component reaches $\rho_1 = 0.57$, CB's reaches $\rho_1 = 0.52$, both with one component above 0.5. The mixed session (`09b2c4d1`) has nothing above threshold; the weak session (`a7763417`) has CB ρ_1 = 0.82 — by far the cleanest reliable subspace anywhere in the dataset — but its V1 side has only 6 units and produces noise. With ≤63 V1 units and ≤46 CB units per session, reliability has a mechanical ceiling tied to how well the cross-half estimator can be measured at small N. This is not weak biology; it is small populations.
 
-**Why this matters.** This is the **decoding-vs-geometry distinction**. Two regions can share *information* (both decodable for movement) without sharing *axes*. CCA tests the axes question. Above-null canonical correlations mean V1 and CB encode something along directions that linearly correspond between the populations on held-out time — they're aligned, not just both informative.
+The right framing for the rest of the document is therefore narrower than a Stringer-style claim would be. We're operating on **real but moderately-noisy population coordinates**, not crystal-clean reliable subspaces. The next stage's phase-shuffle null does not depend on SVCA reliability, so the directional claim survives — but the strength language must be honest: we will be claiming "shared canonical correlations above null," not "reliable shared subspace."
 
 ---
 
-## fig04 — partial CCA vs CCA, the answer figure
+## V1 and CB don't just both decode movement — their codes are aligned
 
-![pCCA vs CCA](figures/fig04_pcca_vs_cca.png)
+A linear classifier reading from V1 spike rates can predict movement variables with high accuracy. A linear classifier reading from CB can do the same. But this kind of decoding evidence is silent on whether the two regions encode movement along the *same* directions in their respective population spaces. Two regions can carry identical scalar information through completely orthogonal codes; a decoder is happy with both, CCA is not. CCA finds the linear combinations of V1 SVCA scores and CB SVCA scores that maximally co-fluctuate on held-out time. ρ_k near 1 means the two regions have an aligned axis at component k; ρ_k at chance means they share information without sharing geometry.
 
-**What it shows.** Two panels:
-- **Left:** per pair-session, two grouped bars showing $\sum_k \rho_k^{\mathrm{CCA}}$ (gray) and $\sum_k \rho_k^{\mathrm{pCCA}}$ (terracotta, with wheel + pupil partialled out). If gray ≫ red, partialling absorbed the shared variance. If gray ≈ red, partialling left it intact.
-- **Right:** per pair-session, single green bar = **survival ratio** $\sum \rho_k^{\mathrm{pCCA}} / \sum \rho_k^{\mathrm{CCA}}$, with the numeric value annotated above each bar.
+![Canonical correlations](figures/mvp/fig03_cca_canonical_correlations.png)
 
-**Conclusions.**
+On the strong session (centre panel), the leading two canonical correlations sit at ρ_1 ≈ 0.34 and ρ_2 ≈ 0.31, with smaller components 3–5 also clearing their (tighter) phase-shuffle nulls. That's **5 components of statistically supported V1↔CB alignment** — not just shared information, but shared *axes* of fluctuation. The mixed session (left panel) shows 3 components above null. The weak session (right panel) has its small-V1 population producing a phase-shuffle null band that engulfs everything; nothing escapes it, and we treat it as uninformative for the cross-region question. The crucial visual cue across all three panels is how closely the blue (CCA) and red (pCCA) curves overlap — partialling out wheel and pupil barely moves the canonical correlations. That overlap is the visible evidence behind the answer figure.
+
+---
+
+## The shared subspace is not just a copy of global arousal
+
+If V1 and CB were both reading off a single global low-dimensional running/arousal state, partialling out the cleanest scalar proxies for that state — wheel velocity and pupil diameter — should collapse the V1↔CB shared variance toward zero. This is the experimental contrast that decides H₀ vs H₁ in the project's framing. We compute the *survival ratio* $\sum \rho_k^{\mathrm{pCCA}} / \sum \rho_k^{\mathrm{CCA}}$: low (near 0) means H₀ ("inherited global state copy"), high (near 1) means H₁ ("distinct computations sharing structure beyond global arousal").
+
+![pCCA vs CCA](figures/mvp/fig04_pcca_vs_cca.png)
+
+Survival ratios are 0.88 (mixed session) and 0.98 (strong session). On the strong session, wheel and pupil together absorb only ~2% of the V1↔CB shared canonical correlations; on the mixed session, ~12%. The third (weak) session shows survival = 1.00, but its underlying canonical correlations sit below the phase-shuffle null — the ratio is mathematically there but interpretively meaningless, and we exclude it from the headline.
 
 | Session | $\sum \rho_k^{\mathrm{CCA}}$ | $\sum \rho_k^{\mathrm{pCCA}}$ | Survival | Informative? |
 |---|---|---|---|---|
@@ -87,51 +65,59 @@ Run scope:
 | `41431f53` (strong) | 0.81 | 0.79 | **0.98** | ✓ |
 | `a7763417` (weak) | 0.83 | 0.83 | 1.00 | ✗ (null engulfs signal — see fig03) |
 
-The interpretation table for the survival ratio:
+For reference, the interpretation table is:
 
 | Survival | Hypothesis support | Interpretation |
 |---|---|---|
-| ≈ 0 | $H_0$ | V1 and CB inherit the same global low-d arousal/locomotion state. Removing wheel + pupil collapses the shared variance. |
-| ≈ 0.3–0.5 | mixed | Most of the shared variance is the global drive; small region-specific component remains. |
+| ≈ 0 | $H_0$ | V1 and CB inherit the same global low-d arousal/locomotion state. |
+| ≈ 0.3–0.5 | mixed | Most shared variance is the global drive; small region-specific component remains. |
 | ≈ 0.7–0.9 | toward $H_1$ | Distinct computations sharing structure beyond global arousal, with non-trivial arousal contribution. |
 | ≈ 1.0 | $H_1$ | Distinct movement-related computations sharing representational structure that is not arousal. |
 
-**Observed: 0.88 and 0.98 on the two informative sessions.** Wheel velocity and pupil diameter together absorb at most 12% of the V1↔CB shared variance, and on the strong session, only ~2%. **This is direct evidence against $H_0$ and toward $H_1$ on this dataset.**
+The two informative sessions land at 0.88 and 0.98 — both in the H₁ zone. **Direct evidence against H₀ on this dataset**, with the strong session especially decisive.
 
 ---
 
-## Synthesis: what does the chain of figures actually show?
+## What the four figures together say
+
+The chain of evidence works because each step asks a question the previous step couldn't:
 
 ```
-fig01 → "the dataset behaves like the literature says"
-                    │ data path is trustworthy
-                    ▼
-fig02 → "each region has a real, if modest, low-d population structure"
-                    │ coordinates are not pure noise
-                    ▼
-fig03 → "V1 and CB share linear axes above a phase-shuffle null"
-                    │ they're aligned, not just both informative
-                    ▼
+fig01 → "the dataset behaves like the literature says"          (data path is honest)
+   ▼
+fig02 → "each region has a real, if modest, low-d state"        (coordinates aren't noise)
+   ▼
+fig03 → "V1 and CB share linear axes above a phase-shuffle null"  (alignment, not just info)
+   ▼
 fig04 → "the alignment doesn't collapse under partialling out wheel + pupil"
-                    │ it isn't merely an inherited global arousal copy
-                    ▼
-              CONCLUSION
+   ▼
+                        CONCLUSION: H₁ favoured
 ```
 
-Each figure asks a question the previous one cannot answer:
+**One-sentence summary**: *On the IBL Brain-Wide Map, V1 and cerebellum share canonical correlations on held-out time that survive partialling out wheel velocity and pupil diameter (survival ratios 0.88 and 0.98 on the n = 2 informative pair sessions), arguing that the movement-correlated activity in V1 and cerebellum is not reducible to a global arousal/locomotion drive but reflects coupling between region-specific computations.*
 
-1. **fig01** says the brain regions behave the way Wang–Druckmann 2026 and IBL 2025 say they should — CB and MO carry strong movement variance, V1 carries a small movement signal (gain modulation), CA1 essentially none. The dataset is honest.
-2. **fig02** says we have real but modest population coordinates per region. Not crystal-clean, but trustworthy enough to feed into CCA when paired with a good null.
-3. **fig03** says V1 and CB share linear axes of activity that co-vary on held-out time more than phase-shuffled surrogates do. They're not just both informative about movement — they're representationally aligned.
-4. **fig04** says that alignment is not a copy of global running/arousal. Removing wheel velocity and pupil diameter — the two cleanest scalars for "global arousal" — does not collapse the shared variance.
+---
 
-**One-sentence summary of the project.** *On the IBL Brain-Wide Map, V1 and cerebellum share canonical correlations on held-out time that survive partialling out wheel velocity and pupil diameter (survival ratios 0.88 and 0.98 on n = 2 informative pair sessions), arguing that the movement-correlated activity in V1 and cerebellum is not reducible to a global arousal/locomotion drive but reflects coupling between region-specific computations.*
+## Caveats — read these before pushing the result far
+
+This is a course-project preliminary, not a population-level statistical claim. The conclusion should be reported as *"on the V1+CB sessions available in BWM 2023_12,"* not as a general statement about V1↔CB across the mouse brain. The specific concerns:
+
+- **Sample size.** BWM 2023_12 contains exactly 3 sessions with simultaneous V1+CB Neuropixels coverage and only 2 of those are informative; we cannot meaningfully compute across-session error bars from n = 2.
+- **Linearity assumption.** The pCCA partials out a *linear* function of (wheel, pupil). A nonlinear arousal drive could leave residual variance under H₀ and inflate the survival ratio; a kernelized residualization or adding $Z^2$, $\dot{Z}$ would be a stronger test.
+- **Minimal Z.** We chose wheel + pupil because they are the cleanest, lab-standard scalars for "global locomotion + arousal" — exactly what people mean by the H₀ hypothesis. A higher-dimensional Z (motion energy, body-camera DLC, lick rate) would absorb more variance and probably push the survival ratio down somewhat. Whether the *correct* operationalization of "global state" is wheel+pupil or something richer is itself a substantive scientific question; our minimal Z makes the result cleanly interpretable.
+- **No M1 within-session.** Zero V1+M1 simultaneous sessions and only 1 CB+M1 session in the freeze, so M1 enters this analysis only as per-region $\Delta R^2$ distributions in fig01 — never as a CCA partner. We cannot directly compare "V1↔CB shared structure" to "V1↔M1 shared structure" within-session.
+- **Modest SVCA reliability.** Most components below Stringer's 0.5 threshold throughout, inherited from small-population ceilings; the CCA is operating on real but modestly-noisy coordinates. The phase-shuffle null doesn't depend on SVCA reliability, but the strength language must be honest.
+- **Structural, not mechanistic.** The result establishes that V1↔CB shared subspace is not arousal, but does not identify *what* it is. The shared structure could reflect a corticocerebellar loop, a shared upstream input, an efference copy that drives both, or a coupled prediction error — this analysis cannot say which.
 
 ---
 
 ## What the next experiment would be
 
-1. **Wang 2026 predicts-vs-follows timing trick.** Compute cross-correlation lags between V1 SVCA scores, CB SVCA scores, and behavior to ask which region's movement signal *leads* and which *follows*. A V1-leads-CB pattern argues for top-down (visual context modulating cerebellar processing); CB-leads-V1 argues for bottom-up (cerebellum predicting visual flow consequences for V1 gain).
-2. **Richer $Z$.** Refit pCCA with $Z$ = (wheel, pupil, whisker ME, body ME, paw DLC, lick rate). If the survival ratio drops substantially, the H₁ conclusion was sensitive to our minimal $Z$ choice. If it stays high, the conclusion is robust.
-3. **dSCA across (V1, CB) jointly.** Demixed Shared Component Analysis (Pang & Sahani 2020 / Takagi et al. 2020) explicitly decomposes population activity into shared-vs-private components conditional on behavior variables. This would quantify the fraction of V1 and CB movement-related variance that is shared vs region-private, with explicit demixing of stimulus + choice + movement.
+Four extensions, in priority order:
+
+1. **Wang 2026 predicts-vs-follows timing trick.** Compute cross-correlation lags between V1 SVCA scores, CB SVCA scores, and behavior to ask which region's movement signal *leads* and which *follows*. V1-leads-CB argues for top-down (visual context modulating cerebellar processing); CB-leads-V1 argues for bottom-up (cerebellum predicting visual flow consequences for V1 gain).
+2. **Richer Z.** Refit pCCA with $Z = (\text{wheel}, \text{pupil}, \text{whisker ME}, \text{body ME}, \text{paw DLC}, \text{lick rate})$. If the survival ratio drops substantially, the H₁ conclusion was sensitive to our minimal Z choice. If it stays high, the conclusion is robust to the standard space of "global movement/arousal" proxies.
+3. **dSCA across (V1, CB) jointly.** Demixed shared component analysis (Pang & Sahani 2020 / Takagi 2020) explicitly decomposes population activity into shared-vs-private components conditional on behavior variables, with explicit demixing of stimulus + choice + movement.
 4. **More pair sessions.** A different IBL freeze, or a dedicated experiment with V1+CB targeted simultaneously, would lift the n=2-3 ceiling. The methods generalize cleanly.
+
+The post-MVP expansion run picked up the M1-comparison thread and is documented separately in `docs/expansion_analysis.md`.

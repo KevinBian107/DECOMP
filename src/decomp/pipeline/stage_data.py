@@ -15,21 +15,31 @@ from ..data.sessions import SessionPlan, adapt_strategy, query_unit_table
 
 def select_sessions(one, target_n: int = 3, freeze: str = "2023_12_bwm_release",
                     cache_dir: Path = Path("data/cache"),
-                    n_per_region: int = 3) -> SessionPlan:
+                    n_per_region: int = 3,
+                    pair_specs: list[tuple[str, str]] | None = None,
+                    pair_min_units: int = 5,
+                    pair_n_max: int | None = None) -> SessionPlan:
     """Run the Gate-1 fallback ladder and cache the resulting plan.
 
-    The cache file embeds the `n_per_region` and `freeze` values used to build it; if the
-    requested values differ, the plan is rebuilt and the cache is overwritten.
+    The cache file embeds n_per_region, freeze, pair_specs, and pair_min_units. If any
+    requested value differs from the cache, the plan is rebuilt and the cache overwritten.
     """
     cache_dir = Path(cache_dir)
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_path = cache_dir / "session_plan.json"
 
+    pair_key = (
+        ",".join(f"{a}:{b}" for (a, b) in (pair_specs or [("VISp", "CB")]))
+    )
+
     if cache_path.exists():
         payload = json.loads(cache_path.read_text())
-        cached_npr = int(payload.get("n_per_region", 3))
-        cached_freeze = payload.get("freeze", freeze)
-        if cached_npr == n_per_region and cached_freeze == freeze:
+        if (
+            int(payload.get("n_per_region", 3)) == n_per_region
+            and payload.get("freeze", freeze) == freeze
+            and payload.get("pair_key", "VISp:CB") == pair_key
+            and int(payload.get("pair_min_units", 5)) == pair_min_units
+        ):
             cov_df = pd.DataFrame(payload["coverage"])
             return SessionPlan(
                 eids=payload["eids"],
@@ -39,10 +49,13 @@ def select_sessions(one, target_n: int = 3, freeze: str = "2023_12_bwm_release",
                 strategy_note=payload["strategy_note"],
                 pair_eids=payload.get("pair_eids", []),
                 pool_eids=payload.get("pool_eids", {}),
+                pair_eids_by_pair=payload.get("pair_eids_by_pair", {}),
             )
 
     unit_df = query_unit_table(one=one, freeze=freeze)
-    plan = adapt_strategy(unit_df, target_n=target_n, n_per_region=n_per_region)
+    plan = adapt_strategy(unit_df, target_n=target_n, n_per_region=n_per_region,
+                          pair_specs=pair_specs, pair_min_units=pair_min_units,
+                          pair_n_max=pair_n_max)
     payload = {
         "eids": plan.eids,
         "coverage": plan.coverage.to_dict(orient="list"),
@@ -51,8 +64,11 @@ def select_sessions(one, target_n: int = 3, freeze: str = "2023_12_bwm_release",
         "strategy_note": plan.strategy_note,
         "pair_eids": plan.pair_eids,
         "pool_eids": plan.pool_eids,
+        "pair_eids_by_pair": plan.pair_eids_by_pair,
         "n_per_region": n_per_region,
         "freeze": freeze,
+        "pair_key": pair_key,
+        "pair_min_units": pair_min_units,
     }
     cache_path.write_text(json.dumps(payload, indent=2))
     return plan

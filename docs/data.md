@@ -214,3 +214,41 @@ Total per session for the V1+CB pair pipeline: **~2 minutes** of pure compute, m
 - **The disk budget is realistic for course-project scope.** ~10–15 GB of ALF data covers our 41-session universe. Add ~3 GB per camera per session if we ever want raw video. We've used ~7 GB of ALF + 3 GB of one mp4.
 
 If we ever wanted to upgrade to research-paper scope, the data argument would be: targeted dual-probe V1+CB experiments (or a non-IBL public dataset that emerges) is the only path. The pCCA pipeline as written would scale immediately to richer data — the methods are not the bottleneck; the recording geometry is.
+
+---
+
+## 8. Post-MVP expansion (added 2026-05-06)
+
+The MVP analyzed 3 V1+CB pair sessions under strict ROI definitions (`VISp` only for V1, `MOp+MOs` for M1). The post-MVP expansion widens these definitions and adds two new region pairs to test whether the V1↔CB result is specific or generalizes.
+
+### Expanded ROI definitions
+
+| ROI key | Beryl labels | Used in |
+|---|---|---|
+| `VIS` | VISp, VISa, VISam, VISl, VISli, VISpl, VISpm, VISpor, VISrl, VISal | post-MVP pair pairs |
+| `VISp` | VISp only | MVP figures (preserved for comparison) |
+| `CB` | LING, CENT2, CENT3, CUL4 5, DEC, FOTU, PYR, UVU, NOD, SIM, ANcr1, ANcr2, PRM, COPY, PFL, FL, FN, IP, DN, VeCB | both |
+| `MO` | MOp, MOs | post-MVP pair pairs |
+| `MO_WIDE` | MOp, MOs, SSp-bfd, SSp-ll, SSp-m, SSp-n, SSp-tr, SSp-ul, SSp-un | available but not used in default run |
+| `CA1` | CA1 | per-region GLM pool only |
+
+### Per-pair coverage matrix on 2023_12 freeze (`min_units_sessions=(5, 2)`)
+
+| Pair | min_units=10 | min_units=5 | (was MVP, strict) |
+|---|---|---|---|
+| V1↔CB (VIS expansion) | 6 | **10** | 1 / 3 (strict VISp) |
+| V1↔M1 (VIS + MOp+MOs) | 3 | **4** | 0 |
+| V1↔M1 wide (VIS + MO_WIDE) | 5 | 8 | 0 |
+| CB↔M1 (MOp+MOs) | 1 | 1 | 1 |
+| CB↔M1 wide (MO_WIDE) | 2 | 3 | 1 |
+| 3-way V1+CB+M1 | **0** | **0** | 0 (impossible on this freeze) |
+
+### Implication for the project
+
+- **V1↔CB sample triples** (3 → 10), enabling per-session distribution claims rather than n=2 anchor-session claims.
+- **V1↔M1 unlocks** (0 → 4) at strict M1 definition, providing the comparison anchor that lets us test whether V1↔CB is specifically interesting or whether all cortical pairs preserve shared structure under wheel+pupil partialling.
+- **CB↔M1 stays at n=1** strict — informative but not statistically meaningful. The CB↔M1 wide variant adds 2 more sessions if needed.
+- **Within-session 3-region partial CCA `CCA(V1, CB | M1)` is impossible.** Zero sessions in BWM 2023_12 have simultaneous V1+CB+M1 Neuropixels coverage, even at the widest definitions and lowest QC. The "is V1↔CB shared structure just an echo of motor cortex's command" hypothesis cannot be tested within-session on this dataset.
+- **Updated post-expansion funnel**: 13,637 → 1,376 → 459 → **51 sessions actually used** (vs 41 in MVP), 4,886 GLM neurons (vs 4,286), 15 pair sessions across 3 pair types (vs 3 across 1 pair type).
+
+See `docs/expansion_analysis.md` for the full post-expansion result interpretation.
