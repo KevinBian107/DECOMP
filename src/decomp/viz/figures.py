@@ -468,6 +468,120 @@ def fig_reliability_aggregated(svca_per_session: list, cca_df: pd.DataFrame,
 
 
 # ============================================================================================
+# fig_dynamics — lag + peri-event analysis on residual canonical variates
+# ============================================================================================
+def fig_dynamics(agg: dict, out_dir: Path = Path("outputs"),
+                  bin_s: float = 0.020, name: str = "dynamics") -> None:
+    """Cross-pair lag + task-locking figure.
+
+    Layout: rows = pairs, cols = (CCF lag analysis, PETH at first-movement, PETH at feedback).
+    Residual (after Z_rich partialling) is the headline; raw (no partialling) shown as a
+    light overlay so the reader can see how much of the effect is behavioural.
+    """
+    if not agg:
+        return
+    pair_order = sorted(agg.keys(),
+                          key=lambda k: -len(agg[k]["peth_resid"].get("feedback",
+                                                {"vals": []}).get("vals", [])))
+    n_rows = len(pair_order)
+    fig, axes = plt.subplots(n_rows, 3, figsize=(14.5, 3.6 * n_rows), squeeze=False)
+
+    # Pre-compute symmetric y-limits per panel column for fair cross-pair comparison
+    def _peth_ylim(ev: str) -> tuple[float, float]:
+        all_means = []
+        for key in pair_order:
+            d = agg[key]
+            for src in ("peth_resid", "peth_raw"):
+                if ev in d[src] and "mean" in d[src][ev]:
+                    m = d[src][ev]["mean"]
+                    if np.any(np.isfinite(m)):
+                        all_means.append(np.nanmax(np.abs(m)))
+        v = (max(all_means) * 1.25) if all_means else 1.0
+        return -v, v
+
+    peth_ylims = {ev: _peth_ylim(ev) for ev in ("first_move", "feedback")}
+
+    for i, key in enumerate(pair_order):
+        a, b = key
+        d = agg[key]
+        col = _pair_color(a, b)
+
+        # ---- Col 0: cross-correlation function (lag) — residual only, with null band ----
+        ax = axes[i, 0]
+        lags = d["lags"]
+        t_lag_ms = lags * bin_s * 1000.0
+        null99 = d["ccf_null_99"]
+        ax.fill_between(t_lag_ms, null99, -null99,
+                          color="#bbb", alpha=0.30,
+                          label="phase-shuffle 99% null" if i == 0 else None)
+        ax.plot(t_lag_ms, d["ccf_resid"], color=col, lw=2.4,
+                  label=r"residual ($Z_{\mathrm{rich}}$)" if i == 0 else None)
+        ccf = d["ccf_resid"]
+        peak_idx = int(np.argmax(np.abs(ccf)))
+        peak_lag_ms = float(t_lag_ms[peak_idx])
+        peak_val = float(ccf[peak_idx])
+        peak_above = abs(peak_val) > null99[peak_idx]
+        ax.scatter([peak_lag_ms], [peak_val], s=80,
+                    facecolor=col if peak_above else "white",
+                    edgecolor="#222", linewidths=1.5, zorder=5)
+        ax.annotate(f"peak: {peak_lag_ms:+.0f} ms\n$\\rho$ = {peak_val:.2f}"
+                     + ("" if peak_above else "  (in null)"),
+                     xy=(peak_lag_ms, peak_val),
+                     xytext=(10, 12 if peak_val >= 0 else -32),
+                     textcoords="offset points", fontsize=10, color="#222")
+        ax.axvline(0.0, color="#222", lw=0.7, alpha=0.5)
+        ax.axhline(0.0, color="#222", lw=0.7, alpha=0.5)
+        ax.set_xlabel(r"Lag $\tau$ (ms)   [$\tau>0$: $A$ leads $B$]")
+        ax.set_ylabel(r"corr$(U_A(t),\,U_B(t+\tau))$")
+        ax.set_title(f"{a} vs {b}  ·  lag",  fontsize=14)
+        # tight y-limits per row
+        ymax = max(float(np.nanmax(np.abs(ccf))), float(np.nanmax(null99))) * 1.25
+        ax.set_ylim(-ymax, ymax)
+        if i == 0:
+            ax.legend(fontsize=10, loc="lower right", frameon=False)
+        _strip_box(ax)
+
+        # ---- Col 1, Col 2: PETH at first-movement and feedback ----
+        for j, ev in enumerate(("first_move", "feedback")):
+            ax = axes[i, j + 1]
+            if ev not in d["peth_resid"]:
+                ax.axis("off"); continue
+            pe_r = d["peth_resid"][ev]
+            pe_x = d["peth_raw"][ev]
+            t = pe_r["t_axis"]
+            # Light raw overlay (residual is the headline — make it dominant)
+            ax.plot(t, pe_x["mean"], color="#aaaaaa", lw=1.2, ls="--",
+                      label="raw (no partial)" if (i == 0 and j == 0) else None)
+            ax.fill_between(t, pe_r["mean"] - pe_r["sem"], pe_r["mean"] + pe_r["sem"],
+                              color=col, alpha=0.20)
+            ax.plot(t, pe_r["mean"], color=col, lw=2.6,
+                      label=r"residual ($Z_{\mathrm{rich}}$)"
+                            if (i == 0 and j == 0) else None)
+            # Annotate magnitude of residual transient
+            mag = float(np.nanmax(np.abs(pe_r["mean"])))
+            t_pk = float(t[int(np.nanargmax(np.abs(pe_r["mean"])))])
+            ax.text(0.97, 0.95, f"|peak| = {mag:.2f}  @ {t_pk:+.2f}s",
+                     transform=ax.transAxes, ha="right", va="top",
+                     fontsize=10, color="#222")
+            ax.axvline(0.0, color="#222", lw=0.7, alpha=0.6)
+            ax.axhline(0.0, color="#888", lw=0.5)
+            ax.set_xlabel(f"Time relative to {ev.replace('_', ' ')} (s)")
+            if j == 0:
+                ax.set_ylabel(r"$\overline{U}(t)$  residual canonical variate")
+            ax.set_title(f"{a} vs {b}  ·  PETH at {ev.replace('_', ' ')}",
+                           fontsize=14)
+            ax.set_ylim(*peth_ylims[ev])
+            if i == 0 and j == 0:
+                ax.legend(fontsize=10, loc="lower right", frameon=False)
+            _strip_box(ax)
+
+    fig.suptitle("Dynamics of the cross-region residual canonical variate  ·  "
+                  "lag and task-locking", y=1.005, fontsize=17)
+    fig.tight_layout()
+    _save(fig, name, out_dir)
+
+
+# ============================================================================================
 # fig_richz_comparison — survival under minimal Z vs richer Z (the discriminating test)
 # ============================================================================================
 def fig_richz_comparison(richz_df: pd.DataFrame, out_dir: Path = Path("outputs"),

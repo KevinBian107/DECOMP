@@ -66,6 +66,72 @@ def fit_pcca(X: np.ndarray, Y: np.ndarray, Z: np.ndarray | None, n_components: i
     return cca_svd(residualize(X, Z), residualize(Y, Z), n_components=n_components)
 
 
+def cv_residual_variates(
+    X: np.ndarray,
+    Y: np.ndarray,
+    Z: np.ndarray | None = None,
+    n_components: int = 8,
+    n_splits: int = 5,
+    random_state: int = 0,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Extract cross-validated (partial) canonical variates U_A(t), U_B(t) of length T.
+
+    For each fold:
+      - Fit residualisation Z->X and Z->Y on train, apply to test (Frisch-Waugh-Lovell).
+      - Fit CCA loadings on residualised train via SVD.
+      - Project residualised test data through trained loadings, store at the test indices.
+
+    Sign alignment: within each fold, flip B_y per-component so train (U_A, U_B) is
+    positively correlated. Across folds, flip A_x and B_y to align with fold-1 loadings,
+    preserving canonical-direction sign so test-fold projections concatenate cleanly.
+
+    Returns: (U_A, U_B) each of shape (T, n_comp).
+    """
+    T = X.shape[0]
+    n_comp = min(n_components, X.shape[1], Y.shape[1])
+    U_A = np.full((T, n_comp), np.nan)
+    U_B = np.full((T, n_comp), np.nan)
+    kf = KFold(n_splits=n_splits, shuffle=True, random_state=random_state)
+    A_ref: np.ndarray | None = None
+
+    for tr_idx, te_idx in kf.split(X):
+        Xtr, Xte = X[tr_idx], X[te_idx]
+        Ytr, Yte = Y[tr_idx], Y[te_idx]
+        if Z is not None:
+            Ztr, Zte = Z[tr_idx], Z[te_idx]
+            rx = LinearRegression(fit_intercept=True).fit(Ztr, Xtr)
+            ry = LinearRegression(fit_intercept=True).fit(Ztr, Ytr)
+            Xtr_r, Xte_r = Xtr - rx.predict(Ztr), Xte - rx.predict(Zte)
+            Ytr_r, Yte_r = Ytr - ry.predict(Ztr), Yte - ry.predict(Zte)
+        else:
+            Xtr_r, Xte_r, Ytr_r, Yte_r = Xtr, Xte, Ytr, Yte
+
+        _, A_x, B_y = cca_svd(Xtr_r, Ytr_r, n_components=n_comp)
+
+        # Within-fold sign: ensure train (U_A, U_B) per-component correlation is positive.
+        Xs_tr = (Xtr_r - Xtr_r.mean(axis=0, keepdims=True)) @ A_x
+        Ys_tr = (Ytr_r - Ytr_r.mean(axis=0, keepdims=True)) @ B_y
+        for k in range(n_comp):
+            if Xs_tr[:, k].std() > 0 and Ys_tr[:, k].std() > 0:
+                if np.corrcoef(Xs_tr[:, k], Ys_tr[:, k])[0, 1] < 0:
+                    B_y[:, k] *= -1
+        # Cross-fold sign: align A_x with fold-1; flip B_y to preserve correlation sign.
+        if A_ref is None:
+            A_ref = A_x.copy()
+        else:
+            for k in range(n_comp):
+                if np.dot(A_x[:, k], A_ref[:, k]) < 0:
+                    A_x[:, k] *= -1
+                    B_y[:, k] *= -1
+
+        Xc = Xte_r - Xte_r.mean(axis=0, keepdims=True)
+        Yc = Yte_r - Yte_r.mean(axis=0, keepdims=True)
+        U_A[te_idx] = Xc @ A_x
+        U_B[te_idx] = Yc @ B_y
+
+    return U_A, U_B
+
+
 def cv_canonical_correlations(
     X: np.ndarray,
     Y: np.ndarray,
