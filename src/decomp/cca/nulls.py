@@ -38,6 +38,11 @@ def shuffle_null(
     Returns the matrix of (n_surrogates, n_components) null mean-rho values plus the 99th
     percentile cutoff per component.
     """
+    if n_surrogates <= 0:
+        return {
+            "null_rhos": np.zeros((0, n_components)),
+            "null_99": np.full(n_components, np.nan),
+        }
     rng = np.random.default_rng(random_state)
     nulls = np.zeros((n_surrogates, n_components))
     for s in range(n_surrogates):

@@ -468,6 +468,120 @@ def fig_reliability_aggregated(svca_per_session: list, cca_df: pd.DataFrame,
 
 
 # ============================================================================================
+# fig_richz_comparison — survival under minimal Z vs richer Z (the discriminating test)
+# ============================================================================================
+def fig_richz_comparison(richz_df: pd.DataFrame, out_dir: Path = Path("outputs"),
+                           name: str = "richz_comparison") -> None:
+    """Per-pair box-and-whisker comparing survival ratios under Z_min vs Z_rich.
+
+    Z_min  = [wheel_velocity, pupil]                           (2-D, the headline result)
+    Z_rich = [wheel_velocity, wheel_acceleration, me_whisker, (me_body,) pupil, lick_rate]
+             (5-6 D, adds the IBL-shipped uninstructed-movement scalars)
+
+    Survival drops materially under Z_rich → wheel+pupil were too narrow a Z and the
+    surviving subspace was partly capturable behavioral state.
+    Survival stays near 1 under Z_rich → the surviving subspace is genuinely orthogonal
+    to behaviorally measurable global state.
+    """
+    if richz_df.empty:
+        return
+    from matplotlib.patches import Patch
+
+    summary = (
+        richz_df.groupby(["eid", "pair_a", "pair_b"])
+        .agg(rho_cca=("rho_cca", "sum"),
+             rho_pcca_min=("rho_pcca_min", "sum"),
+             rho_pcca_rich=("rho_pcca_rich", "sum"))
+        .reset_index()
+    )
+    summary["surv_min"]  = summary["rho_pcca_min"]  / summary["rho_cca"].replace(0, np.nan)
+    summary["surv_rich"] = summary["rho_pcca_rich"] / summary["rho_cca"].replace(0, np.nan)
+    summary["pair_label"] = summary["pair_a"] + " vs " + summary["pair_b"]
+
+    pair_order = (summary.groupby("pair_label")["eid"].nunique()
+                    .sort_values(ascending=False).index.tolist())
+    n_pairs = len(pair_order)
+    positions = np.arange(n_pairs) * 1.0
+    rng = np.random.default_rng(2)
+
+    box_w = 0.34
+    fig, ax = plt.subplots(figsize=(max(7.5, 1.9 * n_pairs + 4.0), 5.6))
+    color_min  = "#5e5e5e"
+    color_rich = _REGION_COLORS.get("CB", "#c44536")
+
+    for i, plabel in enumerate(pair_order):
+        sub = summary[summary["pair_label"] == plabel].reset_index(drop=True)
+        v_min  = sub["surv_min"].dropna().to_numpy()
+        v_rich = sub["surv_rich"].dropna().to_numpy()
+
+        bp_m = ax.boxplot([v_min],  positions=[positions[i] - box_w / 2 - 0.02],
+                            widths=box_w, patch_artist=True, showfliers=False,
+                            medianprops=dict(color="#111", linewidth=2.0),
+                            whiskerprops=dict(color="#555", linewidth=0.9),
+                            capprops=dict(color="#555", linewidth=0.9))
+        bp_r = ax.boxplot([v_rich], positions=[positions[i] + box_w / 2 + 0.02],
+                            widths=box_w, patch_artist=True, showfliers=False,
+                            medianprops=dict(color="#111", linewidth=2.0),
+                            whiskerprops=dict(color="#555", linewidth=0.9),
+                            capprops=dict(color="#555", linewidth=0.9))
+        bp_m["boxes"][0].set_facecolor(color_min);  bp_m["boxes"][0].set_alpha(0.55)
+        bp_r["boxes"][0].set_facecolor(color_rich); bp_r["boxes"][0].set_alpha(0.55)
+
+        # paired dots + connecting lines (per session)
+        jitter = rng.normal(0, 0.018, size=len(v_min))
+        x_m = positions[i] - box_w / 2 - 0.02 + jitter
+        x_r = positions[i] + box_w / 2 + 0.02 + jitter
+        for xm, xr, vm, vr in zip(x_m, x_r, v_min, v_rich):
+            ax.plot([xm, xr], [vm, vr], color="#999", lw=0.8, alpha=0.6, zorder=2)
+        ax.scatter(x_m, v_min,  s=32, color="#222", alpha=0.7, zorder=3,
+                   edgecolors="white", linewidths=0.5)
+        ax.scatter(x_r, v_rich, s=32, color="#222", alpha=0.7, zorder=3,
+                   edgecolors="white", linewidths=0.5)
+        for j, eid in enumerate(sub["eid"].tolist()):
+            if eid.startswith(MVP_ANCHOR_EID_PREFIX):
+                ax.scatter(x_m[j], v_min[j],  s=140, edgecolors="#d4a017",
+                           facecolors="none", linewidths=2.4, zorder=4)
+                ax.scatter(x_r[j], v_rich[j], s=140, edgecolors="#d4a017",
+                           facecolors="none", linewidths=2.4, zorder=4)
+
+        # median annotations
+        if len(v_min):
+            ax.text(positions[i] - box_w / 2 - 0.02, float(np.median(v_min)) + 0.05,
+                    f"{np.median(v_min):.2f}", ha="center", va="bottom",
+                    fontsize=10, color="#222")
+        if len(v_rich):
+            ax.text(positions[i] + box_w / 2 + 0.02, float(np.median(v_rich)) + 0.05,
+                    f"{np.median(v_rich):.2f}", ha="center", va="bottom",
+                    fontsize=10, color="#222")
+
+    ax.axhline(1.0, color="#888", lw=0.7, ls="-")
+    ax.axhline(0.0, color="#222", lw=0.7)
+    ax.set_xticks(positions)
+    ax.set_xticklabels([
+        f"{p}\n(n={int(summary.loc[summary['pair_label']==p, 'eid'].nunique())})"
+        for p in pair_order
+    ], fontsize=12)
+    ax.set_ylabel(r"Survival ratio  $\rho^{\mathrm{pCCA}} / \rho^{\mathrm{CCA}}$")
+    ax.set_ylim(-0.05, 1.25)
+    ax.set_title("Survival of shared subspace under minimal vs richer Z")
+
+    n_min  = int(richz_df["n_z_min"].iloc[0])
+    n_rich = int(richz_df["n_z_rich"].iloc[0])
+    ax.legend(handles=[
+        Patch(facecolor=color_min, alpha=0.55, edgecolor="#222",
+              label=f"Z_min ({n_min}D): wheel + pupil"),
+        Patch(facecolor=color_rich, alpha=0.55, edgecolor="#222",
+              label=f"Z_rich ({n_rich}D): + wheel acc, whisker ME, lick rate" +
+                    (", body ME" if n_rich >= 6 else "")),
+    ], loc="lower left", frameon=False, fontsize=10)
+    _strip_box(ax)
+    fig.suptitle("Richer-Z stress test  ·  what does survival look like under fuller Z?",
+                 y=1.01, fontsize=17)
+    fig.tight_layout()
+    _save(fig, name, out_dir)
+
+
+# ============================================================================================
 # Per-pair detailed figures — written into outputs/by_pair/<pair>/
 # ============================================================================================
 def per_pair_correlations(pair_df: pd.DataFrame, pair_a: str, pair_b: str,
