@@ -632,6 +632,35 @@ footer a:hover { color: var(--hero-accent); border-bottom-color: var(--hero-acce
   .appendix-header { padding: 4rem 1.5rem 2.5rem; }
 }
 
+/* ============================================================
+   MathJax — keep long display equations on the page
+   ============================================================ */
+mjx-container[jax="CHTML"][display="true"],
+mjx-container[jax="SVG"][display="true"] {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.35rem 0.15rem;
+  -webkit-overflow-scrolling: touch;
+}
+mjx-container[jax="CHTML"][display="true"] > mjx-math,
+mjx-container[jax="SVG"][display="true"] > svg {
+  max-width: none;        /* let the math keep its natural width inside the scroller */
+}
+mjx-container[jax="CHTML"]:not([display="true"]) {
+  max-width: 100%;
+  white-space: normal;    /* inline math should wrap with surrounding text */
+}
+@media (max-width: 600px) {
+  mjx-container[jax="CHTML"][display="true"],
+  mjx-container[jax="SVG"][display="true"]  { font-size: 92%; }
+}
+@media (max-width: 420px) {
+  mjx-container[jax="CHTML"][display="true"],
+  mjx-container[jax="SVG"][display="true"]  { font-size: 85%; }
+}
+
 /* --- Floating TOC --- */
 .floating-toc {
   position: fixed;
