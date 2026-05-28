@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DECOMP — Appendix · Math</title>
+  <meta name="description" content="Mathematical details of the DECOMP pipeline: GLM, SVCA, CCA, partial CCA, and lag/peri-event dynamics. Each section gives the equation and what we need it for.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body class="appendix-body">
+
+<!-- Nav -->
+<nav class="site-nav">
+  <div class="nav-inner">
+    <span class="nav-title">DECOMP · IBL Brain-Wide Map</span>
+    <div class="nav-tabs">
+      <a href="index.html" class="nav-tab">Report</a>
+      <a href="appendix.html" class="nav-tab active">Appendix</a>
+      <a href="https://github.com/KevinBian107/DECOMP" target="_blank" rel="noopener" class="nav-tab">Code</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Appendix header -->
+<header class="appendix-header">
+  <div class="container">
+    <h1>Appendix · The math, and what we need it for</h1>
+    <p class="appendix-sub">
+      Five pieces of math do the work in this project. Each section names the
+      object, builds the picture, gives its equation, and states what question
+      that equation lets us answer that nothing simpler can.
+    </p>
+  </div>
+</header>
+
+<!-- Section boxes -->
+<section class="section-boxes">
+  <div class="container">
+    <div class="box-grid box-grid-3">
+      <a class="section-box" href="#glm">
+        <span class="box-number">A.1</span>
+        <span class="box-title">GLM</span>
+        <span class="box-range">Per-neuron variance partition</span>
+      </a>
+      <a class="section-box" href="#svca">
+        <span class="box-number">A.2</span>
+        <span class="box-title">SVCA</span>
+        <span class="box-range">Reliable population subspace</span>
+      </a>
+      <a class="section-box" href="#cca">
+        <span class="box-number">A.3</span>
+        <span class="box-title">CCA</span>
+        <span class="box-range">Cross-region alignment</span>
+      </a>
+      <a class="section-box" href="#pcca">
+        <span class="box-number">A.4</span>
+        <span class="box-title">Partial CCA</span>
+        <span class="box-range">Partialling out behaviour</span>
+      </a>
+      <a class="section-box" href="#dynamics">
+        <span class="box-number">A.5</span>
+        <span class="box-title">Dynamics</span>
+        <span class="box-range">Lag + peri-event averages</span>
+      </a>
+      <a class="section-box" href="#chain">
+        <span class="box-number">A.6</span>
+        <span class="box-title">Chain</span>
+        <span class="box-range">Why these five, in this order</span>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- Floating TOC -->
+<nav class="floating-toc" aria-label="Appendix TOC">
+  <a href="#setup">Setup</a>
+  <a href="#glm">A.1 · GLM</a>
+  <a href="#svca">A.2 · SVCA</a>
+  <a href="#cca">A.3 · CCA</a>
+  <a href="#pcca">A.4 · Partial CCA</a>
+  <a href="#dynamics">A.5 · Dynamics</a>
+  <a href="#chain">A.6 · Chain</a>
+</nav>
+
+<!-- Setup -->
+<section id="setup">
+  <div class="container reveal">
+    <p class="section-label">Setup</p>
+    <h2>Notation</h2>
+    <p>
+      Per session, after binning at $\Delta t = 20$ ms and aligning every behavioural
+      stream onto the spike clock:
+    </p>
+    <ul style="padding-left: 1.4em; margin-bottom: 1em; line-height: 1.85;">
+      <li>$Y^{(R)} \in \mathbb{R}^{n_R \times T}$ is the spike-count matrix for region
+        $R \in \{\text{V1, CB, M1, CA1}\}$, with $n_R$ good-QC units and
+        $T \approx 2.6 \times 10^5$ bins.</li>
+      <li>$X \in \mathbb{R}^{T \times p}$ is the design matrix of behaviour and task
+        regressors, raised-cosine-expanded.</li>
+      <li>$Z(t) \in \mathbb{R}^{T \times d_Z}$ is the confound matrix we partial out.
+        Minimal $Z$ has $d_Z = 2$ (wheel velocity, pupil diameter). Richer $Z$ has
+        $d_Z = 5\text{–}6$ (+ wheel acceleration, whisker ME, body ME, lick rate).</li>
+      <li>$S_R(t) \in \mathbb{R}^{T \times K}$ is the SVCA-projected score time series of
+        region $R$, with $K = 8$.</li>
+    </ul>
+    <p>
+      The research question is about <em>representational geometry</em>, not decoding.
+      Two regions can carry identical scalar information through completely different
+      population codes — a fact a linear classifier is happy to overlook. The methods
+      below are the ones that aren't.
+    </p>
+  </div>
+</section>
+
+<!-- GLM -->
+<section id="glm">
+  <div class="group-heading">
+    <span class="group-number">A.1</span>
+    <h2 class="group-title">Per-neuron Ridge GLM</h2>
+  </div>
+  <div class="container reveal">
+    <p>
+      A single neuron's spike train at 20-ms resolution is the sum of many overlapping
+      echoes. A stimulus appears and ~80&nbsp;ms later a small bump arrives in the firing
+      rate. The mouse starts moving and another bump arrives. The wheel speeds up and the
+      rate ramps with it. Every bin sees the sum of every recent event's lingering
+      influence, plus instantaneous coupling to ongoing covariates, plus noise. The GLM
+      is the formal version of untangling those echoes — give it a menu of behaviours and
+      task variables, expand each into a small bank of raised-cosine basis shapes that
+      look like plausible neural responses, and ask which combination best predicts the
+      count in each bin.
+    </p>
+    <p>
+      The number we actually care about for each neuron is not the full-model $R^2$ but
+      the <em>unique</em> contribution of each kernel group after the others have already
+      competed for the same variance. We get that by fitting the full model on a training
+      fold, refitting without one group of regressors at a time, and reading the held-out
+      $R^2$ gap. That gap, averaged across 5 KFold splits, is $\Delta R^2_g$ — the
+      leave-one-group-out cross-validated unique contribution. Done for every neuron in
+      every region, $\Delta R^2_\text{movement}$ gives a per-region distribution we can
+      rank against the literature.
+    </p>
+    <p>
+      $$
+      y_i(t) = \beta_{i,0} + \sum_{g \in \mathcal{G}} X_g(t)\,\boldsymbol{\beta}_{i,g} + \varepsilon_i(t),\qquad
+      \hat{\boldsymbol{\beta}}_i = \arg\min_{\boldsymbol{\beta}} \;\|y_i - X\boldsymbol{\beta}\|_2^2 + \alpha\|\boldsymbol{\beta}\|_2^2 .
+      $$
+    </p>
+    <p>
+      The kernel groups $\mathcal{G}$ are stimulus, movement, feedback, choice, prior,
+      wheel, motion-energy, and pupil. Each event-aligned regressor is convolved with
+      $n_b = 5$ raised-cosine basis kernels of the form
+    </p>
+    <p>
+      $$
+      b_k(\tau) = \tfrac{1}{2}\bigl(\cos\bigl(\tfrac{\pi(\log(\tau + \tau_0) - c_k)}{2 w}\bigr) + 1\bigr),
+      $$
+    </p>
+    <p>
+      and continuous regressors contribute their convolution with the same bank. The
+      design matrix $X$ ends up with $p \approx 60$ columns. The unique contribution of
+      group $g$ to neuron $i$ is then
+    </p>
+    <p>
+      $$
+      \Delta R^2_{i,g} = R^2\bigl(y_i, \hat y_i^{\text{full}}\bigr)\Big|_{\text{test}}
+      - R^2\bigl(y_i, \hat y_i^{\setminus g}\bigr)\Big|_{\text{test}},
+      \qquad \text{5-fold KFold mean.}
+      $$
+    </p>
+    <p>
+      The literature ranks $\Delta R^2_\text{movement}$ largest in motor cortex, then
+      cerebellum, smaller in visual cortex, near zero in CA1 — encoding is structured
+      across the brain, stronger toward the motor periphery. If our pipeline does not
+      recover that ordering on the expanded 4,886-neuron sample, our design matrix is
+      wrong and nothing downstream is trustworthy. That is the only thing the GLM has
+      to do here.
+    </p>
+    <p>
+      It is also the only thing it <em>can</em> do. Two regions can land at the same
+      $\Delta R^2$ medians while encoding movement in completely different population
+      codes — say, CB carrying running speed along a low-d running-speed axis and V1
+      carrying it as a high-dimensional gain modulation. The geometry-versus-decoding
+      distinction is invisible to a per-neuron scalar. The next four stages exist to
+      see it.
+    </p>
+  </div>
+</section>
+
+<!-- SVCA -->
+<section id="svca">
+  <div class="group-heading">
+    <span class="group-number">A.2</span>
+    <h2 class="group-title">SVCA — within-region reliable subspace</h2>
+  </div>
+  <div class="container reveal">
+    <p>
+      The cross-region CCA in the next section needs two clean low-dimensional summaries
+      — one per region — that genuinely represent each region's population structure
+      rather than the noise floor it happens to sit on. A naive PCA of a 50-unit ×
+      263,000-bin spike-count matrix will hand us "leading components" no matter what:
+      with this much time and this few cells, the top eigenvectors look impressively
+      coherent even on a matrix of pure noise. Downstream methods would be doing
+      high-precision arithmetic on overfitting.
+    </p>
+    <p>
+      SVCA certifies its own components. Split the cells of region $R$ randomly into
+      halves $\mathcal{F}_\text{tr}$ and $\mathcal{F}_\text{te}$ and split time into
+      training and held-out blocks $\mathcal{T}_\text{tr}$ and $\mathcal{T}_\text{te}$.
+      On training time, find the directions of maximal cross-covariance between the two
+      cell-halves — these are the axes along which the two halves' activities are
+      coupled. Now project both halves into the held-out time block and ask whether the
+      same axis is still coupled there. If yes, the axis is a real population mode that
+      reproduces across both a resampling of cells and a resampling of time. If no, it
+      was overfit on training time.
+    </p>
+    <p>
+      Concretely, the cell-by-cell cross-covariance on the training time block is
+    </p>
+    <p>
+      $$
+      C = Y^{(R)}_{\mathcal{F}_\text{tr},\,\mathcal{T}_\text{tr}}\, Y^{(R)\top}_{\mathcal{F}_\text{te},\,\mathcal{T}_\text{tr}}
+      \;\in\; \mathbb{R}^{|\mathcal{F}_\text{tr}|\times|\mathcal{F}_\text{te}|}.
+      $$
+    </p>
+    <p>
+      An SVD $C \approx U \Sigma V^\top$ gives loadings $u_k$ and $v_k$ for the two
+      halves. Project them into the held-out time block,
+    </p>
+    <p>
+      $$
+      s_\text{tr}^{(k)}(t) = u_k^\top\, Y^{(R)}_{\mathcal{F}_\text{tr},\,\mathcal{T}_\text{te}},\qquad
+      s_\text{te}^{(k)}(t) = v_k^\top\, Y^{(R)}_{\mathcal{F}_\text{te},\,\mathcal{T}_\text{te}},
+      $$
+    </p>
+    <p>
+      and the cross-half product over total energy in the held-out block is
+      Stringer&nbsp;2019's reliability,
+    </p>
+    <p>
+      $$
+      \rho^\text{SVCA}_k = \frac{\langle s_\text{tr}^{(k)}\,s_\text{te}^{(k)}\rangle_t}
+                                  {\tfrac{1}{2}\bigl(\langle (s_\text{tr}^{(k)})^2\rangle_t + \langle (s_\text{te}^{(k)})^2\rangle_t\bigr)}.
+      $$
+    </p>
+    <p>
+      $\rho^\text{SVCA}_k$ near 1 means a reproducible population mode; near 0 means
+      noise. For CCA in A.3 we take the top $K = 8$ PCs of the whitened $Y^{(R)}$ as
+      the region's denoised state $S_R(t) \in \mathbb{R}^{T \times K}$, and report the
+      reliability spectrum as a diagnostic of how many of those modes are themselves
+      trustworthy. On the IBL pair-sessions, that number is typically 1–3 for V1 and
+      M1 and considerably higher for CB.
+    </p>
+    <p>
+      SVCA is purely intra-regional. It guarantees that the $K$ directions handed to
+      CCA are signal but says nothing about whether one region's $K$ dimensions and
+      another region's $K$ dimensions point in compatible directions. That is the
+      cross-regional alignment question — A.3.
+    </p>
+  </div>
+</section>
+
+<!-- CCA -->
+<section id="cca">
+  <div class="group-heading">
+    <span class="group-number">A.3</span>
+    <h2 class="group-title">CCA — cross-region alignment</h2>
+  </div>
+  <div class="container reveal">
+    <p>
+      A linear classifier reading from V1 spike counts predicts whether the mouse is
+      running at 95% accuracy. The same classifier on CB also gets 95%. A naïve reading
+      is "both regions know about movement." But the classifier is happy with completely
+      different population codes underneath: V1 might carry running speed along a single
+      arousal-driven gain axis while CB carries it as a high-dimensional forward-model
+      state. Both are decodable from; the two regions share information but not
+      necessarily geometry.
+    </p>
+    <p>
+      The geometric question is strictly stronger: is there a direction in V1's K-space
+      and a direction in CB's K-space whose projections rise and fall together on
+      held-out time? CCA finds those canonical pairs $(a_k, b_k)$ by whitening each
+      region's covariance and SVD-ing the cross-covariance:
+    </p>
+    <p>
+      $$
+      C_{xx} = \tfrac{1}{T} S_\text{V1}^\top S_\text{V1} + \lambda I,\quad
+      C_{yy} = \tfrac{1}{T} S_\text{CB}^\top S_\text{CB} + \lambda I,\quad
+      C_{xy} = \tfrac{1}{T} S_\text{V1}^\top S_\text{CB},
+      $$
+    </p>
+    <p>
+      $$
+      \widetilde{C} = C_{xx}^{-1/2}\, C_{xy}\, C_{yy}^{-1/2} = U\,\Sigma\,V^\top, \qquad \rho_k = \sigma_k.
+      $$
+    </p>
+    <p>
+      The diagonal of $\Sigma$ holds the canonical correlations
+      $\rho_1 \geq \rho_2 \geq \cdots$. $\rho_1 = 1$ means perfectly aligned leading
+      axes; $\rho_1 = 0$ means the two regions share information without sharing
+      geometry. We evaluate $\rho_k$ on time folds held out from the fit, so an overfit
+      alignment cannot masquerade as shared structure.
+    </p>
+    <p>
+      Even on held-out time, two completely unrelated regions with slow drift produce
+      non-zero $\rho_k$ purely from autocorrelated noise — at $T \approx 263k$ bins this
+      is not small. We therefore phase-randomise each channel's Fourier coefficients
+      independently, preserving its power spectrum but breaking its temporal alignment
+      with the other region, redo the CCA, and repeat 200 times. The 99th percentile of
+      those nulls is the floor anything significant must clear.
+    </p>
+    <p>
+      What CCA still cannot decide is the most important thing. A leading $\rho_k$ above
+      null can mean two qualitatively different things. The two regions might both be
+      reading off a single global locomotion + arousal state — itself approximately a
+      function of wheel speed and pupil — in which case the canonical pair just recovers
+      the shared copy of one drive. Or the two regions might share representational
+      structure that goes beyond what wheel and pupil can explain. CCA returns the same
+      answer in both cases. The contrast that separates them is A.4.
+    </p>
+  </div>
+</section>
+
+<!-- pCCA -->
+<section id="pcca">
+  <div class="group-heading">
+    <span class="group-number">A.4</span>
+    <h2 class="group-title">Partial CCA — the experimental contrast</h2>
+  </div>
+  <div class="container reveal">
+    <p>
+      Two students who agree on 80% of test questions look like they're cheating, but
+      they're also taking the same lectures and doing the same homework — of course they
+      agree on a lot. The real test of cheating is whether they still agree on what is
+      left after we subtract out everything they could have learned from the shared
+      lectures.
+    </p>
+    <p>
+      The same logic applies to V1 and CB. Both are bathed in a global locomotion +
+      arousal drive that is, to a first approximation, a linear function of wheel
+      velocity and pupil diameter. Of course they look correlated. The question we
+      actually want is: do they still share canonical correlations after we remove
+      the part of each region's scores that is linearly predictable from
+      $Z = (\text{wheel}, \text{pupil})$?
+    </p>
+    <p>
+      Mechanically: regress each region's K-D score vector on $Z$, take residuals, and
+      run CCA on the residuals. The regression weights are fit on training folds only
+      and applied to held-out folds — anything else lets the residualisation peek at the
+      test set and spuriously deflates apparent shared variance. This is
+      Frisch–Waugh–Lovell with strict cross-validation.
+    </p>
+    <p>
+      $$
+      S_R^{\,r}(t) = S_R(t) - Z(t)\,\hat{B}_R, \qquad \hat{B}_R = (Z^\top Z)^{-1} Z^\top S_R,
+      $$
+    </p>
+    <p>
+      $$
+      \widetilde{C}^{\,\text{partial}} = (C^{r}_{xx})^{-1/2}\, C^{r}_{xy}\, (C^{r}_{yy})^{-1/2} = U' \Sigma' V'^\top,
+      \qquad \rho_k^{\text{pCCA}} = \sigma'_k.
+      $$
+    </p>
+    <p>
+      The headline diagnostic is the survival ratio — the partial canonical correlations
+      summed and divided by the raw canonical correlations summed:
+    </p>
+    <p>
+      $$
+      \text{survival} = \frac{\sum_k \rho_k^{\text{pCCA}}}{\sum_k \rho_k^{\text{CCA}}}.
+      $$
+    </p>
+    <p>
+      Under H₀ — the two regions are both reading the same $Z$-driven global state — the
+      ratio collapses to zero. Under H₁ — the two regions share structure beyond what
+      $Z$ can account for — the ratio approaches one. Anything in between is graded
+      evidence for partial overlap.
+    </p>
+    <p>
+      What is in $Z$ matters. Wheel velocity and pupil are the canonical scalars for
+      "locomotion × arousal" and survive every IBL session, which makes them the
+      conservative, minimal probe — exactly what people mean when they say "global
+      state". A failure to collapse with this $Z$ is stronger evidence against H₀ than
+      a failure with a 6-D kitchen-sink $Z$ would have been. On this dataset survival
+      stays at ≈ 0.97 under minimal $Z$ and walks back to only 0.69–0.85 under a richer
+      5–6-D probe; in no pair does it collapse to zero. Whatever the surviving structure
+      is, A.5 asks dynamic questions of it.
+    </p>
+  </div>
+</section>
+
+<!-- Dynamics -->
+<section id="dynamics">
+  <div class="group-heading">
+    <span class="group-number">A.5</span>
+    <h2 class="group-title">Dynamics — lag and peri-event averages</h2>
+  </div>
+  <div class="container reveal">
+    <p>
+      A survival ratio of ≈&nbsp;0.97 across all three pairs is striking on its own,
+      but it is one scalar per session. Collapsed to a median, it forces three pairs
+      whose biology is plausibly different to look the same. Two structural properties
+      of the leading residual canonical variate $U(t) = U_A(t) \approx U_B(t)$ — the
+      time series of the surviving shared mode after partialling — can tell them apart,
+      and neither is captured by the survival ratio.
+    </p>
+    <p>
+      The first is whether the shared mode has temporal flow. If region A leads region
+      B, the cross-correlation $\mathrm{corr}(U_A(t), U_B(t + \tau))$ peaks at
+      $\tau > 0$; if B leads A, it peaks at $\tau < 0$; if neither leads, it peaks at
+      $\tau = 0$. A non-zero lag at the timescale of a known synaptic pathway
+      (≈ 30–60&nbsp;ms for disynaptic cerebellothalamocortical transmission) is direct
+      evidence of coupling along that pathway. Zero lag is consistent with either a
+      shared drive into both regions or transmission faster than our 20-ms grid can
+      resolve.
+    </p>
+    <p>
+      $$
+      \mathrm{xcorr}(\tau) = \mathrm{corr}\bigl(U_A(t),\, U_B(t + \tau)\bigr),\qquad
+      \tau \in [-500,\,+500]\,\text{ms},
+      $$
+    </p>
+    <p>
+      with a phase-shuffle null on both channels giving the 99% band.
+    </p>
+    <p>
+      The second property is whether the shared mode tracks task events. The IBL trial
+      table gives us first-movement and feedback timestamps; we align $U(t)$ to those
+      events and average across trials:
+    </p>
+    <p>
+      $$
+      \overline{U}(\tau) = \frac{1}{|\mathcal{E}|}\sum_{t_e \in \mathcal{E}} U(t_e + \tau),
+      \qquad \mathcal{E} \in \{\text{first-movement, feedback}\}.
+      $$
+    </p>
+    <p>
+      A flat $\overline{U}(\tau)$ means the residual carries no task-locked structure —
+      the signature of an inherited slow global state. Large peri-event transients mean
+      the residual tracks the task in some way: either as a shared cognitive state both
+      regions reflect simultaneously (zero lag, large transient) or as one region
+      transmitting to the other after a task event (non-zero lag, large transient).
+    </p>
+    <p>
+      Three pairs, three signatures.
+      <span class="pair-tag viscb">V1↔CB</span> shows zero-lag coupling with
+      peri-event-flat averages — an inherited slow global state we did not measure.
+      <span class="pair-tag vismo">V1↔M1</span> shows zero-lag coupling with large
+      peri-event transients — shared task-related cognitive state without transmission.
+      <span class="pair-tag cbmo">CB↔M1</span> shows cerebellum leading motor cortex by
+      +40&nbsp;ms with large motor-event-locked transients — cerebellothalamocortical
+      transmission. The survival ratio is the same in all three; three different things
+      are happening.
+    </p>
+  </div>
+</section>
+
+<!-- Chain -->
+<section id="chain">
+  <div class="group-heading">
+    <span class="group-number">A.6</span>
+    <h2 class="group-title">Why these five, in this order</h2>
+  </div>
+  <div class="container reveal">
+    <p>
+      Each stage answers a question the previous one cannot, and supplies a clean input
+      to the next. Remove any of them and the argument weakens: skip the GLM and we
+      cannot verify the dataset behaves as the literature says; skip SVCA and CCA
+      inherits per-neuron noise; skip CCA and partial CCA has nothing to subtract from;
+      skip partial CCA and we cannot decide between H₀ and H₁; skip dynamics and we
+      cannot tell three different biological mechanisms apart even when the survival
+      ratio agrees.
+    </p>
+    <table class="results-table">
+      <thead>
+        <tr><th>Stage</th><th>Question answered</th><th>Question opened</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>GLM</td><td>Does each region carry movement variance in the proportions the literature reports?</td><td>What population structure does that variance live in?</td></tr>
+        <tr><td>SVCA</td><td>What is the reliable low-d population state per region?</td><td>Do the reliable states align across regions?</td></tr>
+        <tr><td>CCA</td><td>Is there a shared subspace between two regions at all?</td><td>Is the shared subspace just an arousal echo?</td></tr>
+        <tr><td>pCCA</td><td>Does the shared subspace survive partialling out $Z$?</td><td>What is the residual <em>doing</em> in time?</td></tr>
+        <tr><td>Dynamics</td><td>Does $U(t)$ have lag and task locking?</td><td>What mechanism produced the residual?</td></tr>
+      </tbody>
+    </table>
+    <p>
+      The $\Delta R^2$ figure is the sanity check that the dataset behaves the way the
+      literature predicts. The survival-ratio figure is the partialling answer: shared
+      structure does not collapse under wheel + pupil, and only partly walks back under
+      a richer probe. The lag-and-task-locking figure is the mechanistic answer: three
+      pairs reach similar survival through three different biological mechanisms.
+    </p>
+  </div>
+</section>
+
+<a href="#top" class="back-to-top" aria-label="Back to top">↑</a>
+
+<footer>
+  <p>UC San Diego 2026 ·
+  <a href="https://github.com/KevinBian107/DECOMP">GitHub</a> ·
+  <a href="https://www.internationalbrainlab.com/">IBL</a></p>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
