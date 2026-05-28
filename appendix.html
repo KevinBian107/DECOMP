@@ -173,9 +173,12 @@
     </p>
     <p>
       $$
-      \Delta R^2_{i,g} = R^2\bigl(y_i, \hat y_i^{\text{full}}\bigr)\Big|_{\text{test}}
-      - R^2\bigl(y_i, \hat y_i^{\setminus g}\bigr)\Big|_{\text{test}},
-      \qquad \text{5-fold KFold mean.}
+      \begin{aligned}
+      \Delta R^2_{i,g} = R^2\!\bigl(y_i, \hat y_i^{\text{full}}\bigr)\Big|_{\text{test}}
+                       - R^2\!\bigl(y_i, \hat y_i^{\setminus g}\bigr)\Big|_{\text{test}},
+      \\[2pt]
+      \text{averaged over 5 KFold splits.}
+      \end{aligned}
       $$
     </p>
     <p>
@@ -294,9 +297,11 @@
     </p>
     <p>
       $$
-      C_{xx} = \tfrac{1}{T} S_\text{V1}^\top S_\text{V1} + \lambda I,\quad
-      C_{yy} = \tfrac{1}{T} S_\text{CB}^\top S_\text{CB} + \lambda I,\quad
-      C_{xy} = \tfrac{1}{T} S_\text{V1}^\top S_\text{CB},
+      \begin{aligned}
+      C_{xx} &= \tfrac{1}{T} S_\text{V1}^\top S_\text{V1} + \lambda I, \\
+      C_{yy} &= \tfrac{1}{T} S_\text{CB}^\top S_\text{CB} + \lambda I, \\
+      C_{xy} &= \tfrac{1}{T} S_\text{V1}^\top S_\text{CB}.
+      \end{aligned}
       $$
     </p>
     <p>
@@ -362,13 +367,18 @@
     </p>
     <p>
       $$
-      S_R^{\,r}(t) = S_R(t) - Z(t)\,\hat{B}_R, \qquad \hat{B}_R = (Z^\top Z)^{-1} Z^\top S_R,
+      \begin{aligned}
+      S_R^{\,r}(t) &= S_R(t) - Z(t)\,\hat{B}_R, \\
+      \hat{B}_R    &= (Z^\top Z)^{-1} Z^\top S_R.
+      \end{aligned}
       $$
     </p>
     <p>
       $$
-      \widetilde{C}^{\,\text{partial}} = (C^{r}_{xx})^{-1/2}\, C^{r}_{xy}\, (C^{r}_{yy})^{-1/2} = U' \Sigma' V'^\top,
-      \qquad \rho_k^{\text{pCCA}} = \sigma'_k.
+      \begin{aligned}
+      \widetilde{C}^{\,\text{partial}} &= (C^{r}_{xx})^{-1/2}\, C^{r}_{xy}\, (C^{r}_{yy})^{-1/2} \\
+                                       &= U' \Sigma' V'^\top, \qquad \rho_k^{\text{pCCA}} = \sigma'_k.
+      \end{aligned}
       $$
     </p>
     <p>

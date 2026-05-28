@@ -42,7 +42,7 @@
   </div>
   <div class="hero-overlay"></div>
   <div class="hero-content">
-    <h1>Cross-region shared subspaces in mouse cortex partly survive rich behavioural partialling</h1>
+    <h1>Same information, different geometry: cross-region shared subspaces between mouse V1, M1, and cerebellum</h1>
     <p class="authors">
       <span>Kaiwen Bian<sup>1,2,3</sup></span> &middot;
       <span>Yixuan Xin<sup>1,2</sup></span>
@@ -90,20 +90,28 @@
   <div class="container reveal">
     <p class="section-label">Abstract</p>
     <p class="abstract-text">
-      In fifteen dual-region recordings spanning visual cortex (VIS), motor cortex (MO), and
-      cerebellum (CB) on the IBL Brain-Wide Map, the cross-region linear shared subspace
-      survives partialling out wheel velocity and pupil diameter on every session: median
-      ratio of partialled to raw summed canonical correlations is ≈&nbsp;0.97 for all three
-      pairs. A richer partial — adding wheel acceleration, whisker and body motion energy,
-      and lick rate — walks the ratio back to 0.69–0.85 (median, by pair), demonstrating
-      that 10–30 percentage points of the apparent orthogonality were uninstructed-movement
-      signals that wheel+pupil failed to capture. The remaining 0.7–0.85 persists. Cross-
-      correlation and peri-event analysis on the residual canonical variates further
-      reveal three distinct dynamical signatures across pairs: V1↔CB shows zero-lag coupling
-      without task-event structure, V1↔M1 shows zero-lag coupling with strong peri-movement
-      and peri-feedback transients, and CB↔M1 (n&nbsp;=&nbsp;1) shows cerebellum leading
-      motor cortex by ~40&nbsp;ms with motor-event-locked transients. <strong>Three pairs reach
-      similar survival ratios through different mechanisms.</strong>
+      When the same behavioural information appears in many brain regions at once, the
+      natural question is whether those regions share <em>the same neural geometry</em> —
+      the same low-dimensional population state, expressed along the same axes — or whether
+      each region independently arrives at a different code that just happens to decode to
+      the same scalar. Decoding accuracy cannot tell these apart; only the shape of the
+      population state space can. Across fifteen simultaneous dual-region recordings from
+      the IBL Brain-Wide Map spanning mouse visual cortex (V1), motor cortex (M1), and
+      cerebellum (CB), we measure the geometry shared between regional subspaces with
+      canonical correlation analysis, then strip away every direction explainable by
+      measured behaviour — wheel velocity, pupil, whisker and body motion energy, lick rate —
+      and ask what geometry remains. <strong>It does not collapse.</strong> Across all
+      three pairs, 0.69–0.85 of the pair-summed shared geometry survives even the richest
+      behavioural partial. But what survives is doing three different things in the three
+      pairs. <span class="pair-tag viscb">V1↔CB</span> traces a slow, task-flat, zero-lag
+      shared mode — geometry consistent with a global state we still do not measure.
+      <span class="pair-tag vismo">V1↔M1</span> traces a zero-lag mode with large
+      peri-movement and peri-feedback excursions — geometry consistent with a shared
+      cognitive variable both regions reflect simultaneously.
+      <span class="pair-tag cbmo">CB↔M1</span> traces a directed mode with cerebellum
+      leading motor cortex by ~40&nbsp;ms — geometry consistent with real
+      cerebellothalamocortical transmission. <strong>One scalar survival ratio, three
+      different representational geometries.</strong>
     </p>
   </div>
 </section>
@@ -114,28 +122,36 @@
 <section id="question">
   <div class="container reveal">
     <p class="section-label">The question</p>
-    <h2>Inherited global state, or distinct computations that look alike?</h2>
+    <h2>One geometry inherited everywhere, or many that all decode the same?</h2>
+    <p>
+      A population of neurons does not encode the world one cell at a time. It encodes it
+      <em>geometrically</em> — as a low-dimensional state that moves along a few preferred
+      axes inside a much higher-dimensional firing-rate space, with the rest of the
+      directions doing little of behavioural relevance. Two regions can land at the same
+      decoding accuracy through completely different geometries: one might place running
+      speed along a single arousal-driven gain axis while the other carries it as a
+      high-dimensional pattern that a linear classifier happens to read just as well.
+      Same information, different geometry. The shared-subspace methods used below
+      separate these two pictures; a decoder cannot.
+    </p>
     <p>
       Stringer et&nbsp;al. (<a href="https://www.science.org/doi/10.1126/science.aav7893" target="_blank" rel="noopener">2019</a>)
       and the IBL Brain-Wide Map (<a href="https://www.nature.com/articles/s41586-025-09235-0" target="_blank" rel="noopener">2025</a>)
       both report that locomotion and orofacial movement variables are decodable from
-      essentially every region they record. Whether that ubiquity reflects one global
-      signal inherited everywhere or many region-specific computations is unresolved at
-      the representational level — decoding accuracy alone cannot disambiguate, because
-      two regions can carry identical scalar information through completely orthogonal
-      codes, and a linear classifier is happy with both. The shared-subspace methods
-      we use below can.
-    </p>
-    <p>
-      We test that on three region pairs from the IBL Brain-Wide Map 2023_12 release:
+      essentially every mouse brain region they record. The unresolved question is
+      whether that ubiquity reflects <em>one geometry</em> — one low-dimensional global
+      state, inherited along the same axes everywhere — or many region-specific
+      geometries whose only commonality is that the same scalar can be read from each.
+      Three pairs in the IBL Brain-Wide Map 2023_12 release let us probe this:
       <span class="pair-tag viscb">V1↔CB</span> (the canonical "is V1 just inheriting
-      cerebellar arousal" question), <span class="pair-tag vismo">V1↔M1</span> (cortical
-      neighbours plausibly sharing task state), and <span class="pair-tag cbmo">CB↔M1</span>
-      (the most direct anatomical pathway, via the cerebellothalamocortical loop). On
-      fifteen dual-region recordings, we partial out movement covariates at two
-      granularities — first the minimal wheel + pupil pair, then a richer 5–6-D set that
-      adds wheel acceleration, whisker and body motion energy, and lick rate — and probe
-      the lag and task-locking of whatever residual survives.
+      cerebellar arousal geometry?" question), <span class="pair-tag vismo">V1↔M1</span>
+      (cortical neighbours plausibly sharing task-state axes), and
+      <span class="pair-tag cbmo">CB↔M1</span> (the most direct anatomical pathway, via
+      the cerebellothalamocortical loop, where shared geometry would mean shared
+      transmission). On fifteen dual-region recordings, we partial out movement
+      covariates at two granularities — minimal (wheel + pupil) and rich (+ wheel
+      acceleration, whisker and body motion energy, lick rate) — and probe the shape,
+      flow, and task-locking of whatever geometry survives.
     </p>
   </div>
 </section>
@@ -240,14 +256,19 @@
     <p class="section-label">The method</p>
     <h2>Per-neuron, within-region, cross-region, residual</h2>
     <p>
-      Each stage answers a question the previous one cannot. The GLM tells us how
-      movement-tuned a single neuron is. SVCA finds the population modes within a
-      region that are reproducible across cell halves. Cross-region CCA aligns those
-      modes between two regions, and partial CCA asks how much of that alignment is
-      just shared behaviour. Dynamics asks what the surviving alignment is doing in
-      time — does one region lead the other, does the residual lock to task events.
-      The prose below sketches each step in turn; the full math, with equations and
-      "what we need it for" notes per stage, lives in the
+      The pipeline moves down a ladder of geometric resolution. The GLM gives a
+      per-neuron scalar — how much spike-count variance lives along the movement
+      regressors — to verify the dataset behaves the way the literature predicts.
+      SVCA then drops the single-neuron view and asks: what is each region's
+      <em>reliable subspace</em> — the axes inside its firing-rate space along which
+      population activity moves reproducibly rather than just floats on noise? CCA
+      asks the cross-region geometric question: which axes inside region A's subspace
+      co-rotate with which axes inside region B's, and how strongly? Partial CCA strips
+      out the axes linearly explainable by behaviour and re-asks the same question on
+      the residual geometry. Dynamics asks what the surviving axes are doing in time —
+      whether the shared mode flows from one region to the other and whether it locks
+      to task events. The prose below sketches each step in turn; the full math, with
+      equations and "what we need it for" notes per stage, lives in the
       <a href="appendix.html"><strong>Appendix</strong></a>, which the reader new to
       these methods may want to skim first.
     </p>
@@ -303,12 +324,14 @@
     </p>
     <p>
       <strong>Partial CCA via Frisch–Waugh–Lovell.</strong> Two regions bathed in the same
-      global locomotion + arousal drive will look correlated for trivial reasons. The
-      actual question is whether V1 and CB (or V1 and M1, or CB and M1) share structure
-      that <em>cannot</em> be accounted for by wheel velocity and pupil diameter. To answer
-      it, we regress each region's SVCA scores on Z, take the residuals, and fit CCA on
-      the residuals. Both the regression and the CCA fits are estimated on training folds
-      only and applied to held-out folds — strict no-leakage cross-validation.
+      global locomotion + arousal drive will share geometry for trivial reasons — both will
+      carry a behavioural axis, both will look aligned along it. The actual question is
+      whether the two subspaces share <em>any direction</em> that cannot be expressed as a
+      linear function of wheel velocity and pupil diameter. To answer it, we regress each
+      region's SVCA scores on Z, take the residuals — the components of each region's state
+      orthogonal to the behavioural axes — and fit CCA on those residuals. Both the
+      regression and the CCA fits are estimated on training folds only and applied to
+      held-out folds — strict no-leakage cross-validation.
     </p>
     <p>
       <strong>Phase-shuffle null.</strong> At T ≈ 263&nbsp;000 bins with slow neural drift,
