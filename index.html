@@ -38,7 +38,7 @@
      ============================================================ -->
 <section class="hero" id="top">
   <div class="hero-bg">
-    <img src="figures/banner.png" alt="V1, M1, and cerebellum population activity composited from two BWM sessions">
+    <img src="figures/geometry_morph.gif" alt="Joint state-space heatmaps of V1↔CB, V1↔M1, and CB↔M1 morphing from raw CCA to rich-Z partialled, behaviour-coloured gradient fading">
   </div>
   <div class="hero-overlay"></div>
   <div class="hero-content">
@@ -744,6 +744,33 @@
         quantifies how strongly the diagonal coordinate $(U_A + U_B)/\sqrt{2}$
         co-varies with wheel z-score per panel — large in the left column,
         ≈ 0 in the right.
+      </p>
+    </div>
+  </div>
+
+  <div class="container reveal">
+    <p>
+      The same effect is more visceral when shown as a continuous transition.
+      The animation below sweeps a partial coefficient
+      $\alpha \in [0, 1]$ — fraction of $Z$ partialled out — from raw CCA
+      ($\alpha = 0$) to full rich-Z partialled ($\alpha = 1$) and back,
+      side-by-side for all three pairs. Watch the wheel-velocity colour
+      gradient flatten while the diagonal cloud structure stays where it
+      was. The progress bar at the top is $\alpha$.
+    </p>
+  </div>
+
+  <div class="figure-wide reveal">
+    <div class="figure">
+      <img src="figures/geometry_morph.gif" alt="Partialling morph: three side-by-side pair panels animating from raw CCA to rich-Z partialled, wheel-velocity gradient fading while cloud shape persists">
+      <p class="figure-caption">
+        <strong>Figure 7b · Partialling morph.</strong> Continuous shrinkage
+        residualisation $X_\alpha = X - \alpha \cdot \widehat{X}(Z)$, then CCA
+        on $(X_\alpha, Y_\alpha)$, swept across $\alpha$ for each of the three
+        pairs. The diag-slope annotation per panel quantifies the gradient
+        and goes to ≈ 0 by $\alpha = 1$ in every pair. Cloud shape and tight
+        diagonal alignment barely move — geometry persists, behavioural
+        meaning evaporates.
       </p>
     </div>
   </div>
