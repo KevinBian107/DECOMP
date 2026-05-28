@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DECOMP — Cross-region shared subspaces in mouse cortex</title>
+  <meta name="description" content="Whether movement-correlated activity in mouse V1, motor cortex, and cerebellum reflects one global low-d state or distinct region-specific computations — a partial CCA + lag-and-task-locking analysis on 15 dual-region IBL Brain-Wide Map sessions.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:ital,wght@0,400;0,700;0,800;1,400&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <script>
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']] },
+      svg: { fontCache: 'global' }
+    };
+  </script>
+  <script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+
+<!-- ============================================================
+     Nav
+     ============================================================ -->
+<nav class="site-nav">
+  <div class="nav-inner">
+    <span class="nav-title">DECOMP · IBL Brain-Wide Map</span>
+    <div class="nav-tabs">
+      <a href="index.html" class="nav-tab active">Report</a>
+      <a href="appendix.html" class="nav-tab">Appendix</a>
+      <a href="https://github.com/KevinBian107/DECOMP" target="_blank" rel="noopener" class="nav-tab">Code</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============================================================
+     Hero
+     ============================================================ -->
+<section class="hero" id="top">
+  <div class="hero-bg">
+    <img src="figures/banner.png" alt="V1, M1, and cerebellum population activity composited from two BWM sessions">
+  </div>
+  <div class="hero-overlay"></div>
+  <div class="hero-content">
+    <h1>Cross-region shared subspaces in mouse cortex partly survive rich behavioural partialling</h1>
+    <p class="authors">
+      <span>Kaiwen Bian<sup>1,2,3</sup></span> &middot;
+      <span>Yixuan Xin<sup>1,2</sup></span>
+    </p>
+    <p class="institution">
+      <sup>1</sup>Halıcıoğlu Data Science Institute, University of California, San Diego<br>
+      <sup>2</sup>Department of Cognitive Science, University of California, San Diego<br>
+      <sup>3</sup>Computational Neurobiology Laboratory, Salk Institute for Biological Studies
+    </p>
+    <div class="links">
+      <a class="pill-link" href="https://github.com/KevinBian107/DECOMP" target="_blank" rel="noopener">
+        <svg height="16" width="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+        Code
+      </a>
+      <a class="pill-link" href="https://int-brain-lab.github.io/iblenv/" target="_blank" rel="noopener">
+        <svg height="16" width="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="10" ry="4"/><ellipse cx="12" cy="12" rx="4" ry="10"/></svg>
+        IBL Brain-Wide Map
+      </a>
+    </div>
+  </div>
+  <div class="scroll-indicator" aria-hidden="true">↓</div>
+</section>
+
+<!-- ============================================================
+     Floating TOC
+     ============================================================ -->
+<nav class="floating-toc" aria-label="Table of contents">
+  <a href="#abstract">Abstract</a>
+  <a href="#question">The question</a>
+  <a href="#dataset">The dataset</a>
+  <a href="#method">The method</a>
+  <a href="#r1">1 · Per-region encoding</a>
+  <a href="#r2">2 · Cross-region CCA</a>
+  <a href="#r3">3 · Survival ratio</a>
+  <a href="#r4">4 · Richer-Z probe</a>
+  <a href="#r5">5 · Lag &amp; task locking</a>
+  <a href="#r6">6 · What it is, isn't</a>
+  <a href="#conclusion">Conclusion</a>
+</nav>
+
+<!-- ============================================================
+     Abstract
+     ============================================================ -->
+<section class="abstract" id="abstract">
+  <div class="container reveal">
+    <p class="section-label">Abstract</p>
+    <p class="abstract-text">
+      In fifteen dual-region recordings spanning visual cortex (VIS), motor cortex (MO), and
+      cerebellum (CB) on the IBL Brain-Wide Map, the cross-region linear shared subspace
+      survives partialling out wheel velocity and pupil diameter on every session: median
+      ratio of partialled to raw summed canonical correlations is ≈&nbsp;0.97 for all three
+      pairs. A richer partial — adding wheel acceleration, whisker and body motion energy,
+      and lick rate — walks the ratio back to 0.69–0.85 (median, by pair), demonstrating
+      that 10–30 percentage points of the apparent orthogonality were uninstructed-movement
+      signals that wheel+pupil failed to capture. The remaining 0.7–0.85 persists. Cross-
+      correlation and peri-event analysis on the residual canonical variates further
+      reveal three distinct dynamical signatures across pairs: V1↔CB shows zero-lag coupling
+      without task-event structure, V1↔M1 shows zero-lag coupling with strong peri-movement
+      and peri-feedback transients, and CB↔M1 (n&nbsp;=&nbsp;1) shows cerebellum leading
+      motor cortex by ~40&nbsp;ms with motor-event-locked transients. <strong>Three pairs reach
+      similar survival ratios through different mechanisms.</strong>
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     Question
+     ============================================================ -->
+<section id="question">
+  <div class="container reveal">
+    <p class="section-label">The question</p>
+    <h2>Inherited global state, or distinct computations that look alike?</h2>
+    <p>
+      Stringer et&nbsp;al. (<a href="https://www.science.org/doi/10.1126/science.aav7893" target="_blank" rel="noopener">2019</a>)
+      and the IBL Brain-Wide Map (<a href="https://www.nature.com/articles/s41586-025-09235-0" target="_blank" rel="noopener">2025</a>)
+      both report that locomotion and orofacial movement variables are decodable from
+      essentially every region they record. Whether that ubiquity reflects one global
+      signal inherited everywhere or many region-specific computations is unresolved at
+      the representational level — decoding accuracy alone cannot disambiguate, because
+      two regions can carry identical scalar information through completely orthogonal
+      codes, and a linear classifier is happy with both. The shared-subspace methods
+      we use below can.
+    </p>
+    <p>
+      We test that on three region pairs from the IBL Brain-Wide Map 2023_12 release:
+      <span class="pair-tag viscb">V1↔CB</span> (the canonical "is V1 just inheriting
+      cerebellar arousal" question), <span class="pair-tag vismo">V1↔M1</span> (cortical
+      neighbours plausibly sharing task state), and <span class="pair-tag cbmo">CB↔M1</span>
+      (the most direct anatomical pathway, via the cerebellothalamocortical loop). On
+      fifteen dual-region recordings, we partial out movement covariates at two
+      granularities — first the minimal wheel + pupil pair, then a richer 5–6-D set that
+      adds wheel acceleration, whisker and body motion energy, and lick rate — and probe
+      the lag and task-locking of whatever residual survives.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     Dataset
+     ============================================================ -->
+<section id="dataset">
+  <div class="container reveal">
+    <p class="section-label">The dataset</p>
+    <h2>What's actually in 15 simultaneous V1+CB / V1+M1 / CB+M1 sessions</h2>
+    <p>
+      We use the public <a href="https://www.internationalbrainlab.com/brainwidemap" target="_blank" rel="noopener">IBL Brain-Wide Map</a>
+      <code>2023_12</code> freeze — 459 sessions, 1+ Neuropixels probe each, mice performing
+      the IBL contrast-discrimination task. Every session ships: spike-sorted units with
+      <strong>Beryl-atlas annotations</strong>, the wheel encoder at 1 kHz, three head-fixed cameras with
+      DLC pose markers + whisker-pad motion energy + derived pupil diameter, and the
+      trial table. Public ONE auth, no Alyx account needed.
+    </p>
+    <p>
+      The <strong>Beryl atlas</strong> is IBL's standard 308-region coarsening of the
+      <a href="https://atlas.brain-map.org/" target="_blank" rel="noopener">Allen Mouse Brain Common Coordinate Framework v3</a>
+      (CCFv3, ~1300 leaf regions). Beryl rolls leaf labels up to a uniform mid-level
+      hierarchy — primary visual cortex stays <code>VISp</code>; CCFv3's many cerebellar
+      lobule sub-labels collapse into ~17 Beryl labels (cortex lobules <code>LING</code>,
+      <code>CENT</code>, <code>CUL</code>, <code>DEC</code>, <code>FOTU</code>,
+      <code>PYR</code>, <code>UVU</code>, <code>NOD</code>, <code>SIM</code>,
+      <code>AN</code>, <code>PRM</code>, <code>COPY</code>, <code>PFL</code>,
+      <code>FL</code>, plus nuclei <code>FN</code>, <code>IP</code>, <code>DN</code>).
+      Each spike-sorted cluster carries a Beryl acronym after probe-to-CCF histology
+      alignment — that's what we filter on to build per-region populations. The cerebellum
+      ROI in this analysis is therefore the union of all 17 Beryl cerebellar labels,
+      not a single acronym; visual cortex is the union of 10 dorsal-VIS Beryl labels.
+    </p>
+  </div>
+
+  <div class="figure-pair reveal">
+    <div class="figure">
+      <img src="figures/dlc_overlay.gif" alt="3-second clip of the leftCamera video with DLC pose markers overlaid, showing the mouse running during a high-locomotion bout">
+      <p class="figure-caption">
+        <strong>What the mouse is doing.</strong> 3-second clip from the leftCamera of
+        the focal V1+CB session, with DeepLabCut pose markers overlaid (pupil corners,
+        whisker pad, paw, tongue, nose). The mouse is in a head-fixed running bout.
+        The behavioural covariates the GLM and pCCA Z-matrix consume — wheel velocity,
+        whisker motion energy, pupil diameter, lick rate — are all derived from this
+        stream + the wheel encoder.
+      </p>
+    </div>
+    <div class="figure">
+      <img src="figures/data_overview.png" alt="60-second window of session 41431f53: wheel velocity, whisker motion energy, pupil diameter, V1 raster (63 units), CB raster (46 units).">
+      <p class="figure-caption">
+        <strong>What one session looks like.</strong> 60 seconds of session
+        <code>41431f53</code> (subject <code>CSH_ZAD_022</code>, ~88 min total).
+        Top three rows: behavioural covariates on a 20-ms grid (wheel velocity,
+        whisker motion energy, pupil diameter). Bottom two rows: spike rasters
+        from the two simultaneously recorded probes — 63 V1 units (blue) and 46
+        cerebellar units (red). Wheel velocity and motion energy track each other
+        tightly during running bouts; pupil dilates slowly across the window.
+      </p>
+    </div>
+  </div>
+
+  <div class="container reveal">
+    <p>
+      A single session at 20 ms binning has T ≈ 263&nbsp;000 time bins, ~50–100 sorted
+      units per region, ~22&nbsp;M spike events total. Time is plentiful; what's
+      <em>scarce</em> is simultaneous dual-region coverage — the IBL probe-placement
+      protocol is independent across sessions, so the number of sessions containing
+      both regions of any given pair is small and outside our control.
+    </p>
+  </div>
+
+  <div class="figure-wide reveal">
+    <div class="figure">
+      <img src="figures/coverage_summary.png" alt="Left: per-region sessions in the GLM pool (10 each for VISp, CB, MO, CA1). Right: per-pair simultaneous-recording sessions — 10 for V1↔CB, 4 for V1↔MO, 1 for CB↔MO.">
+      <p class="figure-caption">
+        <strong>Recording funnel.</strong> Left: per-region single-region pools used for
+        the per-neuron GLM (10 best sessions per region, 4&nbsp;886 neurons total).
+        Right: per-pair simultaneous-recording counts at minimum 5 units per region.
+        VIS↔CB is the largest pair (n&nbsp;=&nbsp;10), VIS↔MO is intermediate
+        (n&nbsp;=&nbsp;4), CB↔MO is a single session (n&nbsp;=&nbsp;1). Zero sessions
+        in BWM 2023_12 contain simultaneous V1+CB+M1 coverage.
+      </p>
+    </div>
+  </div>
+
+  <div class="container reveal">
+    <div class="stat-row">
+      <div class="stat"><span class="stat-value">4,886</span><span class="stat-label">Neurons (GLM)</span></div>
+      <div class="stat"><span class="stat-value">51</span><span class="stat-label">Sessions used</span></div>
+      <div class="stat"><span class="stat-value">15</span><span class="stat-label">Dual-region pair sessions</span></div>
+      <div class="stat"><span class="stat-value">~263k</span><span class="stat-label">20-ms bins / session</span></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================
+     Method
+     ============================================================ -->
+<section id="method">
+  <div class="container reveal">
+    <p class="section-label">The method</p>
+    <h2>Per-neuron, within-region, cross-region, residual</h2>
+    <p>
+      Each stage answers a question the previous one cannot. The GLM tells us how
+      movement-tuned a single neuron is. SVCA finds the population modes within a
+      region that are reproducible across cell halves. Cross-region CCA aligns those
+      modes between two regions, and partial CCA asks how much of that alignment is
+      just shared behaviour. Dynamics asks what the surviving alignment is doing in
+      time — does one region lead the other, does the residual lock to task events.
+      The prose below sketches each step in turn; the full math, with equations and
+      "what we need it for" notes per stage, lives in the
+      <a href="appendix.html"><strong>Appendix</strong></a>, which the reader new to
+      these methods may want to skim first.
+    </p>
+  </div>
+
+  <div class="container reveal">
+    <div class="pipeline">
+      <div class="pipeline-step">
+        <strong>GLM</strong>
+        Per-neuron Ridge with raised-cosine kernels, leave-one-group-out ΔR²
+        <small>4,886 neurons</small>
+      </div>
+      <div class="pipeline-step">
+        <strong>SVCA</strong>
+        Within-region split-half reliability (Stringer 2019); K = 8 components
+        <small>Stringer 2019 / neuropop</small>
+      </div>
+      <div class="pipeline-step">
+        <strong>CCA + pCCA</strong>
+        Cross-region canonical correlations + Frisch-Waugh-Lovell partialling
+        <small>200 phase-shuffle surrogates</small>
+      </div>
+      <div class="pipeline-step">
+        <strong>Dynamics</strong>
+        Lag (cross-correlation) + peri-event averages of residual canonical variate
+        <small>τ ∈ [-500, +500] ms</small>
+      </div>
+    </div>
+  </div>
+
+  <div class="container reveal">
+    <p>
+      <strong>Per-neuron GLM.</strong> Before any cross-region method runs, we need to know
+      what fraction of each neuron's spike-count variance is uniquely explained by movement,
+      <em>after</em> stimulus, choice, feedback, prior, wheel, motion-energy, and pupil
+      regressors have all competed for the same variance. No simpler estimator gives that
+      decomposition. We fit Ridge regression on 20-ms-binned spike counts with a raised-cosine
+      basis expansion of the eight regressor groups (~60 design columns), compute
+      leave-one-group-out cross-validated ΔR² as the per-group unique contribution, and
+      average over 5 KFold splits. This mirrors
+      <a href="https://github.com/int-brain-lab/paper-brain-wide-map/blob/main/brainwidemap/encoding/pipelines/02_fit_sessions.py" target="_blank" rel="noopener">paper-brain-wide-map/encoding</a>
+      almost verbatim.
+    </p>
+    <p>
+      <strong>Within-region SVCA.</strong> The cross-region CCA stage needs two trustworthy
+      low-dimensional summaries — one per region. Naive PCA returns impressive-looking leading
+      components on any matrix, including pure noise, when the population is small and the
+      time axis is long. To avoid feeding CCA dimensions that wouldn't survive a re-sample,
+      we use Stringer et al.'s split-half-cells × split-half-time procedure: components are
+      fit on one cell-half over training time, then both halves are projected into the
+      held-out time block and the cross-half product is divided by total energy. The
+      resulting reliability ρ approaches 1 for reproducible population modes and 0 for noise.
+    </p>
+    <p>
+      <strong>Partial CCA via Frisch–Waugh–Lovell.</strong> Two regions bathed in the same
+      global locomotion + arousal drive will look correlated for trivial reasons. The
+      actual question is whether V1 and CB (or V1 and M1, or CB and M1) share structure
+      that <em>cannot</em> be accounted for by wheel velocity and pupil diameter. To answer
+      it, we regress each region's SVCA scores on Z, take the residuals, and fit CCA on
+      the residuals. Both the regression and the CCA fits are estimated on training folds
+      only and applied to held-out folds — strict no-leakage cross-validation.
+    </p>
+    <p>
+      <strong>Phase-shuffle null.</strong> At T ≈ 263&nbsp;000 bins with slow neural drift,
+      two completely unrelated regions still produce non-trivial canonical correlations
+      from autocorrelated noise alone. We need a noise floor that preserves each region's
+      autocorrelation while breaking the cross-region temporal alignment, and phase-randomising
+      the Fourier coefficients of each channel does exactly that. We generate 200 such
+      surrogates per pair, take the 99% bound, and use it as the band against which raw
+      and partialled canonical correlations are compared.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     Result 1
+     ============================================================ -->
+<section id="r1">
+  <div class="container reveal">
+    <p class="section-label">Result 1</p>
+    <h2>Per-region encoding reproduces the published ranking</h2>
+    <p>
+      We refit the per-neuron Ridge generalised linear model (raised-cosine task and
+      movement kernels, leave-one-group-out cross-validated ΔR²) used by the IBL
+      collaboration (2025) and Wang &amp; Druckmann (2026), on the expanded
+      4,886-neuron sample.
+    </p>
+  </div>
+
+  <div class="figure-wide reveal">
+    <div class="figure">
+      <img src="figures/glm_dr2.png" alt="Per-region GLM ΔR² for movement, stimulus, and choice kernel groups">
+      <p class="figure-caption">
+        <strong>Figure 1.</strong> Per-region GLM ΔR² for the movement, stimulus, and
+        choice kernel groups (n&nbsp;=&nbsp;4,886 neurons across 51 sessions).
+      </p>
+    </div>
+  </div>
+
+  <div class="container reveal">
+    <p>
+      Cross-validated ΔR² for the movement kernel group ranks largest in motor cortex
+      and cerebellum, smaller in visual cortex, and near zero in CA1 — the canonical
+      MO&nbsp;≳&nbsp;CB&nbsp;&gt;&nbsp;VIS&nbsp;≳&nbsp;CA1 ordering reported in the
+      literature. The stimulus and choice variances follow the published per-region
+      pattern. The expanded sample preserves the ranking, so the cross-region inference
+      below inherits trust from a passing reproduction at the new scale.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     Result 2
+     ============================================================ -->
+<section id="r2">
+  <div class="container reveal">
+    <p class="section-label">Result 2</p>
+    <h2>Raw cross-region correlations differ by pair, but partialling barely moves them</h2>
+    <p>
+      Per session, we compute cross-validated canonical correlations between the leading
+      K&nbsp;=&nbsp;8 SVCA-projected score time series of the two regions, with
+      phase-shuffle surrogates as the noise floor, and repeat with both sides residualised
+      against Z&nbsp;=&nbsp;(wheel velocity, pupil diameter).
+    </p>
+  </div>
+
+  <div class="figure-wide reveal">
+    <div class="figure">
+      <img src="figures/correlations.png" alt="Raw and partialled canonical correlations for each pair, with phase-shuffle null bands">
+      <p class="figure-caption">
+        <strong>Figure 2.</strong> Cross-pair canonical correlations across sessions.
+        Left panel: raw cross-validated $\rho_k$ vs.&nbsp;component $k$. Right panel: the
+        same under wheel + pupil partial. Phase-shuffle 99% null bands are shaded.
+      </p>
+    </div>
+  </div>
+
+  <div class="container reveal">
+    <p>
+      The three pairs differ by nearly a factor of two in raw shared variance (Fig. 2 left).
+      <span class="pair-tag viscb">V1↔CB</span> carries the largest leading canonical
+      correlation (median $\rho_1 \approx 0.36$ across sessions, with components above the
+      null through $k = 4$), <span class="pair-tag cbmo">CB↔M1</span> sits in the middle
+      ($\rho_1 \approx 0.30$), and <span class="pair-tag vismo">V1↔M1</span> is the smallest
+      ($\rho_1 \approx 0.22$, with $k \geq 3$ already inside the surrogate band). The pair
+      with the strongest coupling is therefore not the pair with the most direct anatomical
+      pathway — V1 reaches cerebellum only through pontine and brainstem relays, while CB
+      and M1 connect directly through the cerebellothalamocortical loop. We return to this
+      asymmetry in <a href="#r3">§3</a>.
+    </p>
+    <p>
+      Partialling wheel velocity and pupil diameter shifts each curve down only slightly
+      (Fig. 2 right): V1↔CB peak from 0.36 to 0.32, V1↔M1 from 0.22 to 0.20, CB↔M1 from
+      0.30 to 0.28. Under the null hypothesis that the three pairs share movement structure
+      <em>exclusively</em> through a globally coupled wheel + pupil drive, the right panel
+      would lie inside the surrogate band. It does not. The shared subspaces extracted by
+      canonical correlation analysis are not, predominantly, the wheel- or pupil-driven
+      projection of each region's activity.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     Result 3
+     ============================================================ -->
+<section id="r3">
+  <div class="container reveal">
+    <p class="section-label">Result 3</p>
+    <h2>The cross-pair convergence in survival ratio is not three identical measurements</h2>
+    <p>
+      Two further observations bear on how Fig.&nbsp;2 should be read. First, SVCA
+      reliability — the cross-validated reproducibility of each population component —
+      is highly asymmetric across pairs.
+    </p>
+  </div>
+
+  <div class="figure-wide reveal">
+    <div class="figure">
+      <img src="figures/reliability.png" alt="Cross-pair SVCA reliability across sessions">
+      <p class="figure-caption">
+        <strong>Figure 3.</strong> SVCA reliability per region across pair-sessions, with
+        Stringer&nbsp;<em>et&nbsp;al.</em>'s $\rho_1 = 0.5$ threshold marked.
+      </p>
+    </div>
+  </div>
+
+  <div class="container reveal">
+    <p>
+      Cerebellum on the V1+CB pair sessions is uniquely well-resolved (median
+      $\rho_1^{\text{SVCA}} \approx 0.76$, with several sessions clearing
+      Stringer&nbsp;<em>et&nbsp;al.</em>'s 2019 $\rho_1 = 0.5$ threshold on multiple
+      components). Visual cortex and motor cortex on every other pair-session sit at
+      $\rho_1 \approx 0.20$–$0.25$; the V1↔M1 pair has uniformly poor reliability on both
+      sides. The CCA on V1↔CB is therefore being computed between a noisy V1 score and a
+      relatively clean CB score, with the cerebellar side carrying the recoverable
+      structure.
+    </p>
+  </div>
+
+  <div class="figure-wide reveal">
+    <div class="figure">
+      <img src="figures/survival.png" alt="Cross-pair survival of shared subspace under wheel + pupil partial">
+      <p class="figure-caption">
+        <strong>Figure 4.</strong> Survival ratio
+        $\sum_k \rho_k^{\text{pCCA}} / \sum_k \rho_k^{\text{CCA}}$ under wheel + pupil
+        partialling, per pair-session.
+      </p>
+    </div>
+  </div>
+
+  <div class="container reveal">
+    <p>
+      Second, the pair-summed canonical correlations converge to nearly identical
+      <em>ratios</em> across pairs — median
+      $\sum_k \rho_k^{\text{pCCA}} / \sum_k \rho_k^{\text{CCA}} = 0.97, 0.98, 0.98$ for
+      V1↔CB, V1↔M1, CB↔M1 — despite the underlying signal magnitudes
+      ($\sum_k \rho_k^{\text{CCA}} \approx 0.80, 0.44, 0.62$) differing by nearly a factor
+      of two. The convergence is a proportional statement about preserved-versus-discarded
+      variance, not a magnitude statement about the size of the shared subspace itself.
+      If wheel and pupil were exhaustive measures of global movement state, each region's
+      projection of that state would be the dominant axis of cross-region coupling,
+      partialling would cancel the leading canonical correlations, and the survival ratio
+      would tend to zero. The fact that it tends to <em>one</em> for every pair is the
+      headline of the partialling analysis under wheel + pupil — but the headline is only
+      as strong as the assumption that wheel + pupil exhausts the relevant global state.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     Result 4
+     ============================================================ -->
+<section id="r4">
+  <div class="container reveal">
+    <p class="section-label">Result 4</p>
+    <h2>Survival walks back substantially under a richer behavioural probe</h2>
+    <p>
+      To test the assumption that wheel + pupil exhaust the relevant global state, we
+      extend Z to wheel acceleration, whisker motion energy, body motion energy (where
+      the body camera is available), and lick rate — the IBL-shipped uninstructed-movement
+      scalars, 5–6 dimensions versus the original 2 — and re-fit the partial CCA on the
+      same SVCA scores.
+    </p>
+  </div>
+
+  <div class="figure-wide reveal">
+    <div class="figure">
+      <img src="figures/richz_comparison.png" alt="Survival under minimal Z vs. richer Z, per pair">
+      <p class="figure-caption">
+        <strong>Figure 5.</strong> Per-pair survival ratio under minimal Z (wheel + pupil)
+        vs. richer Z (+ wheel acceleration, whisker ME, body ME, lick rate).
+      </p>
+    </div>
+  </div>
+
+  <div class="container reveal">
+    <p>
+      Median survival drops in every pair: V1↔CB to 0.85 (Δ&nbsp;=&nbsp;0.11), V1↔M1 to
+      0.76 (Δ&nbsp;=&nbsp;0.19), CB↔M1 to 0.69 (Δ&nbsp;=&nbsp;0.29). The earlier 0.97 was
+      therefore over-stated as a measure of behavioural orthogonality. About a tenth to a
+      third of what looked like non-behavioural cross-region coupling under the narrower
+      probe was uninstructed-movement variance that wheel and pupil simply did not record.
+    </p>
+    <p>
+      The shared subspace nevertheless does not collapse: 0.69–0.85 of pair-summed shared
+      variance per pair survives even the richer probe. Within V1↔CB, the per-session
+      magnitude of the drop is loosely anti-correlated with raw signal magnitude (Spearman
+      r ≈ −0.5, n = 10): the two sessions with the largest $\sum_k \rho_k^{\text{CCA}}$
+      lose only 0.02–0.03 of survival, while the session with the smallest
+      $\sum_k \rho_k^{\text{CCA}}$ loses 0.27. The reverse pattern — strong-signal sessions
+      losing <em>more</em> — would have been the prediction if cross-region coupling were
+      uniformly behaviour-driven and merely inflated on the strong sessions by capturing
+      more behavioural variance. The observed direction, with the appropriate small-n
+      caveat, is consistent with the strongest cross-region shared structure being the
+      structure least explained by even the richer behavioural channels.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     Result 5 — Dynamics
+     ============================================================ -->
+<section id="r5">
+  <div class="container reveal">
+    <p class="section-label">Result 5</p>
+    <h2>Lag and task-locking discriminate three different mechanisms</h2>
+    <p>
+      The survival ratio under richer Z is a single number per session; collapsed to a
+      median per pair, it forces three pairs whose biology is plausibly different to look
+      the same. Two structural properties of the leading residual canonical variate
+      $U(t) = U_A(t) \approx U_B(t)$ discriminate sharply between the candidate mechanisms
+      — temporal flow between the two regions, and locking of $U(t)$ to task events.
+    </p>
+    <p>
+      We extract the leading residual canonical variate per session (cross-validated,
+      fold-aligned for sign) and compute (i) the cross-correlation function
+      $\mathrm{corr}(U_A(t), U_B(t + \tau))$ for
+      $\tau \in [-500, +500]$&nbsp;ms with a phase-shuffle null, and (ii) peri-event
+      averages of $U(t)$ aligned to first-movement and feedback times from the trial table.
+    </p>
+  </div>
+
+  <div class="figure-wide reveal">
+    <div class="figure">
+      <img src="figures/dynamics.png" alt="Cross-correlation function and peri-event averages of the leading residual canonical variate, per pair">
+      <p class="figure-caption">
+        <strong>Figure 6.</strong> Lag (top row) and task-locking (bottom two rows) of the
+        leading residual canonical variate, per pair. <span class="pair-tag viscb">V1↔CB</span>:
+        zero-lag coupling, flat peri-event averages. <span class="pair-tag vismo">V1↔M1</span>:
+        zero-lag coupling, strong peri-movement and peri-feedback transients.
+        <span class="pair-tag cbmo">CB↔M1</span> (n&nbsp;=&nbsp;1): cerebellum leads motor
+        cortex by ~40&nbsp;ms, large transients around first-movement.
+      </p>
+    </div>
+  </div>
+
+  <div class="container reveal">
+    <p>The three pairs separate.</p>
+
+    <h3><span class="pair-tag viscb">V1↔CB</span></h3>
+    <p>
+      The cross-correlation function has a clear peak at $\tau = 0$ (median
+      $\rho = 0.33$ across n = 10 sessions, above the phase-shuffle 99% null), but the
+      peri-event averages are essentially flat at first-movement
+      ($|\text{peak}| = 0.09$) and at feedback ($|\text{peak}| = 0.07$). The residual
+      carries shared structure that has no temporal flow and no task-event signature —
+      what a low-dimensional global state inherited identically by both regions would
+      produce: a state that fluctuates on slow, non-event-locked timescales (basal
+      arousal modes, brain-state oscillations, slow drift) and that whisker motion
+      energy, lick rate, and wheel acceleration do not capture.
+    </p>
+
+    <h3><span class="pair-tag vismo">V1↔M1</span></h3>
+    <p>
+      The lag function also peaks at zero ($\rho \approx 0.17$, smaller magnitude than
+      V1↔CB), but the peri-event averages show pronounced transients at first-movement
+      ($|\text{peak}| = 0.37$, ~360 ms post-movement) and at feedback
+      ($|\text{peak}| = 0.34$, ~80 ms post-feedback). The residual is task-locked but
+      transmission-free — the signature of a shared internal state (attention,
+      expectation, motor preparation) that both regions reflect simultaneously without
+      one transmitting to the other.
+    </p>
+
+    <h3><span class="pair-tag cbmo">CB↔M1</span> <span style="font-weight:400; font-size:0.7em; color: var(--text-muted);">(n = 1)</span></h3>
+    <p>
+      The lag function peaks at $\tau = +40$&nbsp;ms with cerebellum leading motor cortex
+      ($\rho = 0.21$, above the surrogate band), and the peri-event averages show large
+      transients around first-movement ($|\text{peak}| = 0.60$, ~140 ms <em>pre-</em>movement)
+      and feedback ($|\text{peak}| = 0.65$, ~440 ms <em>pre-</em>feedback). The residual has
+      both directional flow at the timescale of disynaptic cerebellothalamocortical
+      transmission and pronounced motor-event-locked dynamics — the signature of genuine
+      cross-region coupling along the cerebellothalamocortical pathway, with the lag
+      magnitude consistent with the published latency of cerebellar output to motor cortex
+      (≈ 30–60&nbsp;ms).
+    </p>
+
+    <p>
+      The three pairs therefore look similar in <em>proportion of shared variance preserved
+      under behavioural partialling</em> but different in <em>what the preserved structure
+      is doing</em>. V1↔CB on this dataset is the strongest case for "global state we did
+      not measure" rather than real cross-region coupling. CB↔M1, even at n&nbsp;=&nbsp;1,
+      is the strongest case for genuine cortico-cerebellar communication. V1↔M1 sits
+      between, as a case of shared task-related cognitive state without measurable
+      transmission.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     Result 6 — what it is, isn't
+     ============================================================ -->
+<section id="r6">
+  <div class="container reveal">
+    <p class="section-label">Result 6</p>
+    <h2>What the residual is — and is not</h2>
+    <p>
+      The complement to the previous section: what the dynamics analysis rules out for
+      each pair. The <span class="pair-tag viscb">V1↔CB</span> residual cannot be
+      predominantly real cross-region coupling along the cerebellothalamocortical or
+      cerebro-cerebellar pathways — those would predict a non-zero lag and at least some
+      task-event locking, neither of which we see. The <span class="pair-tag vismo">V1↔M1</span>
+      residual cannot be exclusively a global non-cognitive drive — that would predict
+      flat peri-event averages, but the peri-movement and peri-feedback transients are 4×
+      the magnitude of the V1↔CB transients. And the <span class="pair-tag cbmo">CB↔M1</span>
+      residual cannot be reduced to a common upstream drive — that would predict zero-lag
+      coupling, not the +40&nbsp;ms lead.
+    </p>
+    <p>
+      Across all three pairs, the simplest H₀ — that the residual is just behavioural
+      noise the partialling failed to remove — is not consistent with the lag and
+      task-locking patterns: behavioural noise would not produce the systematic
+      peri-feedback transients seen on V1↔M1 and CB↔M1, nor the directional lag on CB↔M1.
+    </p>
+    <p>
+      What we still cannot rule out, on the V1↔CB pair specifically, is a
+      higher-dimensional global state with non-event-locked dynamics that wheel + pupil
+      + whisker + body + lick simply do not measure. The cleanest in-dataset extension
+      would be adding LFP power-band envelopes (theta, beta, gamma) from IBL's per-probe
+      power-spectral density files, which we have not yet ingested — these would proxy
+      slow brain-state oscillations and would either crush the V1↔CB residual (story
+      confirmed) or leave it intact (forcing a real-coupling-along-non-anatomical-routes
+      interpretation).
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     Conclusion
+     ============================================================ -->
+<section class="conclusion" id="conclusion">
+  <div class="container reveal">
+    <p class="section-label">Conclusion</p>
+    <h2>Three pairs, three mechanisms, one constraint</h2>
+    <p>
+      In 15 dual-region IBL sessions, cross-region shared subspaces between V1, CB, and M1
+      partly survive even rich behavioural partialling — but the surviving structure does
+      different things in different pairs. V1↔CB looks like an unmeasured global state
+      (zero-lag, task-flat). V1↔M1 looks like shared task-related cognitive state
+      (zero-lag, strongly task-locked). CB↔M1 looks like real cerebellothalamocortical
+      transmission (+40 ms cerebellar lead, motor-event-locked). Survival ratios alone
+      collapse three plausibly different biologies into one number; lag and task-locking
+      pull them apart.
+    </p>
+    <p>
+      The methodological lesson: <strong>scalar survival ratios under partialling are
+      necessary but not sufficient</strong>. The shape of the residual — its temporal flow
+      and its locking to task events — is where the mechanism actually lives. A "shared
+      subspace survives behavioural partialling" headline can hide three different
+      structural facts, and the dataset has to be probed in the time domain to tell them
+      apart.
+    </p>
+
+    <h3>Limitations</h3>
+    <p>
+      Sample sizes for V1↔M1 (n&nbsp;=&nbsp;4) and especially CB↔M1 (n&nbsp;=&nbsp;1) bound
+      the strength of any distributional claim about those pairs, including the dynamics
+      signatures. The "VIS" definition in this analysis is widened to all dorsal visual
+      cortex; the V1-specific reading of the earlier 3-session MVP analysis is preserved
+      only on the gold-ringed anchor session in the figures. The asymmetric SVCA reliability
+      across pair-sessions (see §3) means the <em>absolute</em> size of the shared subspace
+      is not directly comparable across pairs — only the ratio of preserved-to-raw shared
+      variance is.
+    </p>
+
+    <h3>Key references</h3>
+    <ol class="references">
+      <li>International Brain Laboratory <em>et al.</em> (2025). A brain-wide map of neural
+        activity during complex behaviour. <em>Nature</em>, 645, 177–185.</li>
+      <li>Stringer C, Pachitariu M, Steinmetz N, Reddy CB, Carandini M, Harris KD (2019).
+        Spontaneous behaviors drive multidimensional, brainwide activity.
+        <em>Science</em>, 364(6437), eaav7893.</li>
+      <li>Wang Y, Kurgyis L, Druckmann S (2026). Brain-wide movement encoding is structured
+        across and within brain areas. <em>Nature Neuroscience</em> (in press).</li>
+      <li>Musall S, Kaufman MT, Juavinett AL, Gluf S, Churchland AK (2019). Single-trial
+        neural dynamics are dominated by richly varied movements.
+        <em>Nature Neuroscience</em>, 22, 1677–1686.</li>
+      <li>Semedo JD, Zandvakili A, Machens CK, Yu BM, Kohn A (2019). Cortical areas
+        interact through a communication subspace. <em>Neuron</em>, 102(1), 249–259.</li>
+    </ol>
+  </div>
+</section>
+
+<a href="#top" class="back-to-top" aria-label="Back to top">↑</a>
+
+<footer>
+  <p>UC San Diego 2026 ·
+  <a href="https://github.com/KevinBian107/DECOMP">GitHub</a> ·
+  <a href="https://www.internationalbrainlab.com/">IBL</a></p>
+</footer>
+
+<script src="js/main.js"></script>
+</body>
+</html>
