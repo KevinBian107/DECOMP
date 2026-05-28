@@ -195,74 +195,128 @@ def main() -> None:
         for p in PAIRS
     }
 
-    # ---- 3. Render frames: 3 pair panels in a row + a progress bar at top ----
+    # ---- 3. Render frames in two styles ----
     lim = 2.4
-    fig = plt.figure(figsize=(12.4, 5.2), dpi=80)
-    gs = fig.add_gridspec(2, 3, height_ratios=[0.10, 1.0],
-                            top=0.90, bottom=0.10, left=0.05, right=0.97,
-                            hspace=0.32, wspace=0.22)
-    bar_ax = fig.add_subplot(gs[0, :])
-    panel_axes = [fig.add_subplot(gs[1, c]) for c in range(3)]
-
-    bar_ax.set_xlim(0, 1); bar_ax.set_ylim(0, 1)
-    bar_ax.set_xticks([0, 0.5, 1.0])
-    bar_ax.set_xticklabels(["raw CCA  (α = 0)", "α = 0.5",
-                              "rich-Z pCCA  (α = 1)"], fontsize=10)
-    bar_ax.set_yticks([])
-    for s in ["top", "right", "left"]:
-        bar_ax.spines[s].set_visible(False)
-    bar_ax.tick_params(length=2, width=0.8, pad=2)
-    bar_ax.fill_between([0, 1], 0, 1, color="#e6e6e6")
-    bar_ax.fill_between([0, 0], 0, 1, color="#c44536", alpha=0.85)
-    bar_ax.axvline(0, color="#1a1a2e", linewidth=1.6)
-
-    def render(frame_idx):
-        alpha = alphas[frame_idx]
-        for ax, p in zip(panel_axes, PAIRS):
-            a, b = per_frame_by_pair[p][frame_idx]
-            ax.clear()
-            if a.size and b.size:
-                mean_z = _heatmap_data(a, b, wh_std_by_pair[p], lim=lim, nbin=18)
-                ax.imshow(mean_z.T, origin="lower",
-                            extent=(-lim, lim, -lim, lim),
-                            cmap="RdBu_r", vmin=-1.0, vmax=1.0,
-                            interpolation="bilinear", aspect="equal")
-            ax.plot([-lim, lim], [-lim, lim], color="black",
-                      ls="--", lw=0.7, alpha=0.5)
-            ax.axhline(0, color="black", lw=0.4, alpha=0.35)
-            ax.axvline(0, color="black", lw=0.4, alpha=0.35)
-            ax.set_xlim(-lim, lim); ax.set_ylim(-lim, lim)
-            la, lb = PAIR_LABEL_AB[p]
-            ax.set_xlabel(f"$U_A$  ({la})", labelpad=3, fontsize=11)
-            ax.set_ylabel(f"$U_B$  ({lb})", labelpad=3, fontsize=11)
-            ax.set_title(PAIR_LABEL[p], color=PAIR_COLOR[p], pad=6, fontsize=13)
-            slope = slopes_by_pair[p][frame_idx]
-            ax.text(0.03, 0.97, f"diag slope = {slope:+.2f}",
-                      transform=ax.transAxes, ha="left", va="top",
-                      fontsize=9, family="monospace",
-                      bbox=dict(boxstyle="round,pad=0.25", fc="white",
-                                  ec="#cccccc", lw=0.5, alpha=0.9))
-
-        # progress bar
-        for c in list(bar_ax.collections):
-            c.remove()
-        bar_ax.fill_between([0, 1], 0, 1, color="#e6e6e6")
-        bar_ax.fill_between([0, alpha], 0, 1, color="#c44536", alpha=0.85)
-        for line in bar_ax.lines:
-            line.set_xdata([alpha, alpha])
-        fig.suptitle(f"Partialling morph   ·   α = {alpha:.2f}",
-                       y=0.985, fontsize=14, fontweight="bold")
-        return ()
-
     frame_order = list(range(len(alphas)))
     if PING_PONG:
         frame_order += list(range(len(alphas) - 2, 0, -1))
 
-    anim = animation.FuncAnimation(
-        fig, render, frames=frame_order, interval=70, blit=False)
-    out_path = OUT / "geometry_morph.gif"
-    anim.save(str(out_path), writer=animation.PillowWriter(fps=14), dpi=85)
-    print(f"Wrote {out_path}  ({out_path.stat().st_size / 1024:.0f} KB)")
+    def _render_full(out_path: Path) -> None:
+        """Light theme — full axes/labels/title, for inline figure embed."""
+        fig = plt.figure(figsize=(12.4, 5.2), dpi=80)
+        gs = fig.add_gridspec(2, 3, height_ratios=[0.10, 1.0],
+                                top=0.90, bottom=0.10, left=0.05, right=0.97,
+                                hspace=0.32, wspace=0.22)
+        bar_ax = fig.add_subplot(gs[0, :])
+        panel_axes = [fig.add_subplot(gs[1, c]) for c in range(3)]
+        bar_ax.set_xlim(0, 1); bar_ax.set_ylim(0, 1)
+        bar_ax.set_xticks([0, 0.5, 1.0])
+        bar_ax.set_xticklabels(["raw CCA  (α = 0)", "α = 0.5",
+                                  "rich-Z pCCA  (α = 1)"], fontsize=10)
+        bar_ax.set_yticks([])
+        for s in ["top", "right", "left"]:
+            bar_ax.spines[s].set_visible(False)
+        bar_ax.tick_params(length=2, width=0.8, pad=2)
+
+        def render(frame_idx):
+            alpha = alphas[frame_idx]
+            for ax, p in zip(panel_axes, PAIRS):
+                a, b = per_frame_by_pair[p][frame_idx]
+                ax.clear()
+                if a.size and b.size:
+                    mean_z = _heatmap_data(a, b, wh_std_by_pair[p], lim=lim, nbin=18)
+                    ax.imshow(mean_z.T, origin="lower",
+                                extent=(-lim, lim, -lim, lim),
+                                cmap="RdBu_r", vmin=-1.0, vmax=1.0,
+                                interpolation="bilinear", aspect="equal")
+                ax.plot([-lim, lim], [-lim, lim], color="black",
+                          ls="--", lw=0.7, alpha=0.5)
+                ax.axhline(0, color="black", lw=0.4, alpha=0.35)
+                ax.axvline(0, color="black", lw=0.4, alpha=0.35)
+                ax.set_xlim(-lim, lim); ax.set_ylim(-lim, lim)
+                la, lb = PAIR_LABEL_AB[p]
+                ax.set_xlabel(f"$U_A$  ({la})", labelpad=3, fontsize=11)
+                ax.set_ylabel(f"$U_B$  ({lb})", labelpad=3, fontsize=11)
+                ax.set_title(PAIR_LABEL[p], color=PAIR_COLOR[p], pad=6, fontsize=13)
+                slope = slopes_by_pair[p][frame_idx]
+                ax.text(0.03, 0.97, f"diag slope = {slope:+.2f}",
+                          transform=ax.transAxes, ha="left", va="top",
+                          fontsize=9, family="monospace",
+                          bbox=dict(boxstyle="round,pad=0.25", fc="white",
+                                      ec="#cccccc", lw=0.5, alpha=0.9))
+            for c in list(bar_ax.collections):
+                c.remove()
+            bar_ax.fill_between([0, 1], 0, 1, color="#e6e6e6")
+            bar_ax.fill_between([0, alpha], 0, 1, color="#c44536", alpha=0.85)
+            for line in bar_ax.lines:
+                line.set_xdata([alpha, alpha])
+            fig.suptitle(f"Partialling morph   ·   α = {alpha:.2f}",
+                           y=0.985, fontsize=14, fontweight="bold")
+            return ()
+
+        anim = animation.FuncAnimation(
+            fig, render, frames=frame_order, interval=70, blit=False)
+        anim.save(str(out_path), writer=animation.PillowWriter(fps=14), dpi=85)
+        plt.close(fig)
+        print(f"Wrote {out_path}  ({out_path.stat().st_size / 1024:.0f} KB)")
+
+    def _render_hero(out_path: Path) -> None:
+        """Dark-navy theme — bare heatmaps for hero background use.
+
+        - Figure facecolor = hero navy so letterbox letterboxes seamlessly.
+        - No tick labels, no axis labels, no titles, no slope annotations.
+        - Slim white progress bar across the top.
+        """
+        HERO_BG = "#0d1b2a"
+        fig = plt.figure(figsize=(13.0, 5.0), dpi=80, facecolor=HERO_BG)
+        gs = fig.add_gridspec(2, 3, height_ratios=[0.05, 1.0],
+                                top=0.96, bottom=0.04, left=0.025, right=0.975,
+                                hspace=0.06, wspace=0.06)
+        bar_ax = fig.add_subplot(gs[0, :])
+        bar_ax.set_facecolor(HERO_BG)
+        bar_ax.set_xlim(0, 1); bar_ax.set_ylim(0, 1)
+        bar_ax.set_xticks([]); bar_ax.set_yticks([])
+        for s in bar_ax.spines.values():
+            s.set_visible(False)
+
+        panel_axes = [fig.add_subplot(gs[1, c]) for c in range(3)]
+        for ax in panel_axes:
+            ax.set_facecolor(HERO_BG)
+            for s in ax.spines.values():
+                s.set_visible(False)
+
+        def render(frame_idx):
+            alpha = alphas[frame_idx]
+            for ax, p in zip(panel_axes, PAIRS):
+                a, b = per_frame_by_pair[p][frame_idx]
+                ax.clear()
+                ax.set_facecolor(HERO_BG)
+                if a.size and b.size:
+                    mean_z = _heatmap_data(a, b, wh_std_by_pair[p], lim=lim, nbin=18)
+                    ax.imshow(mean_z.T, origin="lower",
+                                extent=(-lim, lim, -lim, lim),
+                                cmap="RdBu_r", vmin=-1.0, vmax=1.0,
+                                interpolation="bilinear", aspect="equal")
+                ax.set_xlim(-lim, lim); ax.set_ylim(-lim, lim)
+                ax.set_xticks([]); ax.set_yticks([])
+                for s in ax.spines.values():
+                    s.set_visible(False)
+            # progress bar — slim, light against dark facecolor
+            for c in list(bar_ax.collections):
+                c.remove()
+            bar_ax.fill_between([0, 1], 0, 1, color="#27384f")
+            bar_ax.fill_between([0, alpha], 0, 1, color="#4cc9f0", alpha=0.92)
+            return ()
+
+        anim = animation.FuncAnimation(
+            fig, render, frames=frame_order, interval=70, blit=False)
+        anim.save(str(out_path), writer=animation.PillowWriter(fps=14),
+                    dpi=80, savefig_kwargs={"facecolor": HERO_BG})
+        plt.close(fig)
+        print(f"Wrote {out_path}  ({out_path.stat().st_size / 1024:.0f} KB)")
+
+    _render_full(OUT / "geometry_morph.gif")
+    _render_hero(OUT / "geometry_morph_hero.gif")
 
 
 if __name__ == "__main__":
