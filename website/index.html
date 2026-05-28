@@ -79,7 +79,8 @@
   <a href="#r3">3 · Survival ratio</a>
   <a href="#r4">4 · Richer-Z probe</a>
   <a href="#r5">5 · Lag &amp; task locking</a>
-  <a href="#r6">6 · What it is, isn't</a>
+  <a href="#r6">6 · Geometry, made visible</a>
+  <a href="#r7">7 · What it is, isn't</a>
   <a href="#conclusion">Conclusion</a>
 </nav>
 
@@ -142,6 +143,28 @@
       whether that ubiquity reflects <em>one geometry</em> — one low-dimensional global
       state, inherited along the same axes everywhere — or many region-specific
       geometries whose only commonality is that the same scalar can be read from each.
+    </p>
+  </div>
+
+  <div class="figure-wide reveal">
+    <div class="figure">
+      <img src="figures/geometry_schematic.png" alt="Schematic of three region-pair geometries: V1↔CB slow zero-lag mode, V1↔M1 zero-lag task-locked mode, CB↔M1 directed +40 ms mode">
+      <p class="figure-caption">
+        <strong>What we mean by representation geometry.</strong> Each region's
+        reliable population activity lives on a low-d manifold in its own
+        firing-rate space (coloured ellipsoids). The cross-region shared subspace
+        is a plane connecting them — a set of directions along which the two
+        regions' activity is geometrically aligned. The glyph drawn on the plane
+        encodes <em>what the shared mode is doing in time</em>: a slow smooth
+        oscillation (V1↔CB), a synchronous pulse with no flow (V1↔M1), or a
+        directed flow with a non-zero lead time (CB↔M1). Three pairs, three
+        substrate geometries — same plane, different dance on it.
+      </p>
+    </div>
+  </div>
+
+  <div class="container reveal">
+    <p>
       Three pairs in the IBL Brain-Wide Map 2023_12 release let us probe this:
       <span class="pair-tag viscb">V1↔CB</span> (the canonical "is V1 just inheriting
       cerebellar arousal geometry?" question), <span class="pair-tag vismo">V1↔M1</span>
@@ -640,11 +663,207 @@
 </section>
 
 <!-- ============================================================
-     Result 6 — what it is, isn't
+     Result 6 — geometry, made visible
      ============================================================ -->
 <section id="r6">
   <div class="container reveal">
     <p class="section-label">Result 6</p>
+    <h2>The geometry, made visible</h2>
+    <p>
+      The five preceding results live as scalars: ΔR² distributions, canonical
+      correlations, survival ratios, lag-of-peak, peri-event amplitude. Numbers
+      can rank, but they do not let the reader <em>see</em> what the shared
+      geometry is doing. Two pictures below turn the central claim — three
+      pairs reach similar survival through different geometric mechanisms —
+      from a sentence into a shape, and add one piece of information the
+      scalar analyses cannot give us: the shape persists under partialling, but
+      <em>what that shape means about behaviour</em> does not.
+    </p>
+  </div>
+
+  <!-- ----- Figure 7: state space ----- -->
+  <div class="container reveal">
+    <h3>What does the shared mode mean? Joint state-space, coloured by wheel velocity</h3>
+    <p>
+      Canonical correlation gives us a single number — how aligned the two
+      regions' subspaces are — but it does not tell us what that alignment
+      <em>is</em>. To see the shared mode itself, we plot the leading
+      canonical variates of the two regions, $U_A(t)$ and $U_B(t)$, against
+      each other on a 2-D plane. Each point in this plane is one 20-ms time
+      bin: $U_A$ is region&nbsp;A's projection of its population activity onto
+      the leading cross-region axis at that moment; $U_B$ is region&nbsp;B's
+      projection onto its matched axis. A strong cross-region coupling shows
+      up as a cloud aligned along the diagonal — when region&nbsp;A's
+      projection is high, so is region&nbsp;B's. The <em>shape</em> of the
+      cloud is the geometry of the shared mode.
+    </p>
+    <p>
+      The shape alone, however, says nothing about what the shared mode is
+      <em>about</em>. So we colour each pixel of the 2-D histogram by the
+      mean wheel velocity (z-scored) of the time bins that fall into it. If
+      the shared mode is, in essence, the running-versus-quiet axis, the
+      bins on one side of the diagonal will be times when the mouse is
+      stationary (blue) and the bins on the other side will be times when
+      the mouse is running (red): the cloud develops a clear blue-to-red
+      gradient along its long axis. If the shared mode is not primarily
+      about running, the wheel velocity is distributed indiscriminately
+      across positions in the cloud and the colour is uniform grey. The
+      <strong>shape</strong> tells us whether the geometry survives; the
+      <strong>gradient</strong> tells us how much of that geometry was the
+      wheel axis to begin with.
+    </p>
+    <p>
+      The left column of Figure&nbsp;7 shows the raw CCA — no behavioural
+      partialling. All three pairs carry a non-trivial wheel-velocity
+      gradient: positions along the leading shared canonical axis are
+      partly diagnostic of how fast the mouse was moving. The signed slope
+      of this gradient is printed inside each panel as "diag slope". The
+      right column shows pCCA under rich-Z partialling — wheel velocity,
+      wheel acceleration, whisker motion energy, body motion energy, pupil
+      diameter, and lick rate all linearly removed from each region's
+      activity before CCA is fit. <strong>The cloud shape barely changes
+      between the two columns</strong> — the cross-region canonical
+      correlation $\rho$ printed in the corner moves by 0.02–0.04 across all
+      three pairs — yet the wheel gradient collapses to near zero in every
+      panel. The shared subspace did not collapse, but the wheel-velocity
+      meaning of position along it did. The geometry persists, stripped of
+      its behavioural meaning, and what remains must be aligned to something
+      we have not measured.
+    </p>
+  </div>
+
+  <div class="figure-wide reveal">
+    <div class="figure">
+      <img src="figures/geometry_state_space.png" alt="Joint state-space heatmap per pair, coloured by mean wheel velocity in each (U_A, U_B) bin, raw CCA vs partial CCA">
+      <p class="figure-caption">
+        <strong>Figure 7.</strong> Joint state-space heatmap of the leading
+        canonical variates per pair (rows) under raw CCA vs rich-Z pCCA
+        (columns). Bin colour = mean z-scored wheel velocity of the time
+        bins falling into that 2-D bin. Dotted ellipse = 2σ outline of the
+        cloud. Dashed line = diagonal reference. The "diag slope" inset
+        quantifies how strongly the diagonal coordinate $(U_A + U_B)/\sqrt{2}$
+        co-varies with wheel z-score per panel — large in the left column,
+        ≈ 0 in the right.
+      </p>
+    </div>
+  </div>
+
+  <!-- ----- Figure 8: RSA ----- -->
+  <div class="container reveal">
+    <h3>How do the regions sort trial conditions? Cross-region RSA</h3>
+    <p>
+      CCA asks whether the two regions share <em>axes</em>. But two regions
+      can encode the same task structure through completely different axes
+      and still agree on <em>which conditions are similar to which others</em>.
+      To probe that basis-free notion of shared geometry, we use
+      representational similarity analysis (Kriegeskorte <em>et&nbsp;al.</em> 2008).
+    </p>
+    <p>
+      Every trial gets a condition label combining stimulus side
+      (<code>L</code>/<code>R</code>), absolute-contrast bin (<code>0</code>,
+      <code>lo</code>, <code>mi</code>, <code>hi</code> &mdash; 0&nbsp;%,
+      0–6.25&nbsp;%, 6.25–25&nbsp;%, 25–100&nbsp;%), and feedback outcome
+      (<code>+</code> correct, <code>−</code> incorrect) — e.g. <code>Lhi+</code>
+      = "high-contrast left, correct". For each condition we average the SVCA
+      scores over the 400&nbsp;ms post-stimulus window, then build a per-region
+      similarity matrix whose <strong>rows and columns are both that label
+      set</strong>, in the same order. Cell $(i, j)$ is the Pearson $r$
+      between the mean activity vectors for conditions $i$ and $j$ — deep red
+      ($r \approx +1$) means "these two conditions evoked very similar
+      population responses in this region", white ($r \approx 0$) means
+      "uncorrelated", and deep blue ($r \approx -1$) means "anti-correlated".
+      Each matrix is symmetric, with $r = 1$ on the diagonal (every condition
+      is identical to itself), and is the region's geometric fingerprint of how
+      it groups task conditions. The cross-region overlap is the Spearman
+      correlation between the corresponding upper triangles of the two
+      matrices (higher = more shared geometry).
+    </p>
+    <p>
+      Before reading the cross-region overlap, the <em>within-matrix structure</em>
+      of each individual similarity matrix tells us how much that single region
+      cares about the trial labels at all. A uniformly red matrix means the
+      region treats every condition as evoking essentially the same population
+      response — it has not committed any of its leading SVCA dimensions to
+      discriminating side, contrast, or feedback in the post-stimulus window.
+      Block structure means the region <em>does</em> discriminate, and the
+      block boundaries reveal which variable it cares about: a 4×4 split along
+      contrast bins says "this region encodes how bright the stimulus was";
+      checkerboard alternation along the <code>+</code>/<code>−</code> axis says
+      "this region encodes whether the mouse got it right". The matrix is not
+      just an input to the cross-region statistic — it is the per-region
+      readout of representational specificity.
+    </p>
+    <p>
+      The three pair-rows do not show this in equal measure. The
+      <span class="pair-tag viscb">V1↔CB</span> row has two near-uniformly red
+      matrices: in the 400-ms post-stimulus window, neither V1's leading SVCA
+      modes nor CB's strongly discriminate amongst left-side trial conditions
+      at the population level — the matrices are featureless, the cross-region
+      Spearman correlation ($r \approx +0.53$) is therefore measuring overlap
+      between two relatively flat fingerprints. The
+      <span class="pair-tag vismo">V1↔M1</span> row is the most informative:
+      both matrices show clear off-diagonal whitish cells, indicating that
+      certain condition pairs evoke clearly distinct patterns (e.g. correct
+      vs incorrect at the same contrast), and the two matrices' patterns
+      visibly resemble each other — which is why their cross-region Spearman
+      is the strongest in the dataset ($r \approx +0.72$ raw, $+0.65$
+      partial) despite V1↔M1 having the smallest leading canonical correlation
+      of the three pairs. The <span class="pair-tag cbmo">CB↔M1</span> row
+      sits in between on M1's side and again featureless on CB's: the
+      cerebellum, on this fast post-stimulus window, simply does not sort
+      these task labels along its reliable SVCA axes, so the cross-region
+      Spearman ($r \approx +0.36$ raw, $+0.28$ partial) is dragged down by
+      one region having no condition-specific structure to share.
+    </p>
+    <p>
+      The take-away is that axis-aligned overlap (CCA) and basis-free
+      condition-structure overlap (RSA) are not the same thing, and per-pair
+      they can be ranked in opposite orders. V1↔M1's shared geometry lives in
+      the <em>pattern of condition similarities</em> more than in
+      co-rotating axes; CB↔M1's shared geometry lives in <em>fewer real axes</em>
+      (the directed +40-ms transmission seen in §5) but those axes do not
+      organise the task-condition structure visibly within our window. The
+      small drop under partialling in every pair mirrors the CCA finding:
+      shared condition geometry persists after stripping the behavioural axes.
+      One number cannot summarise that — two pictures and two metrics can.
+    </p>
+  </div>
+
+  <div class="figure-wide reveal">
+    <div class="figure">
+      <img src="figures/geometry_rsa.png" alt="Per-pair representational dissimilarity matrices over trial conditions for region A and region B, with cross-region Spearman correlation under raw and Z-partialled regimes">
+      <p class="figure-caption">
+        <strong>Figure 8.</strong> Cross-region RSA per pair. Left two
+        columns: representational dissimilarity matrices (RDMs) for
+        region&nbsp;A and region&nbsp;B over trial-condition labels (side
+        L/R × contrast bin 0/lo/mi/hi × feedback +/−). Cell colour = $1 - r$,
+        the correlation distance between mean SVCA-score vectors of the two
+        conditions on the row and column. Right column: Spearman correlation
+        between the upper triangles of the two RDMs, raw vs rich-Z
+        partialled, per pair.
+      </p>
+    </div>
+  </div>
+
+  <div class="container reveal">
+    <p>
+      The two pictures together encode more than the survival ratio can: the
+      shared <em>axes</em> persist under rich behavioural partialling but
+      lose their wheel-velocity meaning, and the shared <em>condition
+      geometry</em> is also robust but distributed across pairs in a way
+      that the axis-aligned analysis would not have predicted. The headline
+      of the partialling analysis is one number; the geometry of what
+      survives needs two pictures and a different vocabulary for each.
+    </p>
+  </div>
+</section>
+
+<!-- ============================================================
+     Result 7 — what it is, isn't
+     ============================================================ -->
+<section id="r7">
+  <div class="container reveal">
+    <p class="section-label">Result 7</p>
     <h2>What the residual is — and is not</h2>
     <p>
       The complement to the previous section: what the dynamics analysis rules out for
