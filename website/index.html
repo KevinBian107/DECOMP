@@ -125,20 +125,19 @@
     <p class="section-label">The question</p>
     <h2>One geometry inherited everywhere, or many that all decode the same?</h2>
     <p>
-      A population of neurons does not encode the world one cell at a time. It encodes it
+      A population of neurons does not encode the world one neuron at one time. Information is represented
       <em>geometrically</em> — as a low-dimensional state that moves along a few preferred
-      axes inside a much higher-dimensional firing-rate space, with the rest of the
-      directions doing little of behavioural relevance. Two regions can land at the same
-      decoding accuracy through completely different geometries: one might place running
+      axes inside a much higher-dimensional firing-rate space, with the remaining dimensions contribute relatively little behaviorally relevant variance.
+      Two regions can land at the same decoding accuracy through completely different geometries: one might place running
       speed along a single arousal-driven gain axis while the other carries it as a
       high-dimensional pattern that a linear classifier happens to read just as well.
-      Same information, different geometry. The shared-subspace methods used below
-      separate these two pictures; a decoder cannot.
+      Same information, but different geometry. The shared-subspace methods used below
+      separate these two pictures, while a decoder cannot do that.
     </p>
     <p>
       Stringer et&nbsp;al. (<a href="https://www.science.org/doi/10.1126/science.aav7893" target="_blank" rel="noopener">2019</a>)
       and the IBL Brain-Wide Map (<a href="https://www.nature.com/articles/s41586-025-09235-0" target="_blank" rel="noopener">2025</a>)
-      both report that locomotion and orofacial movement variables are decodable from
+      both demonstrate that locomotion and orofacial movement variables are decodable from
       essentially every mouse brain region they record. The unresolved question is
       whether that ubiquity reflects <em>one geometry</em> — one low-dimensional global
       state, inherited along the same axes everywhere — or many region-specific
@@ -150,22 +149,21 @@
     <div class="figure">
       <img src="figures/geometry_schematic.png" alt="Schematic of three region-pair geometries: V1↔CB slow zero-lag mode, V1↔M1 zero-lag task-locked mode, CB↔M1 directed +40 ms mode">
       <p class="figure-caption">
-        <strong>What we mean by representation geometry.</strong> Each region's
+        <strong> Representation geometry ?</strong> Each region's
         reliable population activity lives on a low-d manifold in its own
         firing-rate space (coloured ellipsoids). The cross-region shared subspace
-        is a plane connecting them — a set of directions along which the two
-        regions' activity is geometrically aligned. The glyph drawn on the plane
+        is represented as a plane connecting these manifolds, corresponding to directions along which population activity is aligned between regions. The glyph drawn on the plane
         encodes <em>what the shared mode is doing in time</em>: a slow smooth
         oscillation (V1↔CB), a synchronous pulse with no flow (V1↔M1), or a
-        directed flow with a non-zero lead time (CB↔M1). Three pairs, three
-        substrate geometries — same plane, different dance on it.
+        directed flow with a non-zero lead time (CB↔M1). Here we have three pairs and three
+        substrate geometries. They share the same plane but different dance on it.
       </p>
     </div>
   </div>
 
   <div class="container reveal">
     <p>
-      Three pairs in the IBL Brain-Wide Map 2023_12 release let us probe this:
+      Three region pairs in the IBL Brain-Wide Map 2023_12 release let us investigate on this question:
       <span class="pair-tag viscb">V1↔CB</span> (the canonical "is V1 just inheriting
       cerebellar arousal geometry?" question), <span class="pair-tag vismo">V1↔M1</span>
       (cortical neighbours plausibly sharing task-state axes), and
@@ -185,14 +183,14 @@
 <section id="dataset">
   <div class="container reveal">
     <p class="section-label">The dataset</p>
-    <h2>What's actually in 15 simultaneous V1+CB / V1+M1 / CB+M1 sessions</h2>
+    <h2>What's actually inside the 15 simultaneous V1+CB / V1+M1 / CB+M1 sessions</h2>
     <p>
       We use the public <a href="https://www.internationalbrainlab.com/brainwidemap" target="_blank" rel="noopener">IBL Brain-Wide Map</a>
       <code>2023_12</code> freeze — 459 sessions, 1+ Neuropixels probe each, mice performing
       the IBL contrast-discrimination task. Every session ships: spike-sorted units with
       <strong>Beryl-atlas annotations</strong>, the wheel encoder at 1 kHz, three head-fixed cameras with
       DLC pose markers + whisker-pad motion energy + derived pupil diameter, and the
-      trial table. Public ONE auth, no Alyx account needed.
+      trial table.
     </p>
     <p>
       The <strong>Beryl atlas</strong> is IBL's standard 308-region coarsening of the
@@ -215,10 +213,10 @@
     <div class="figure">
       <img src="figures/dlc_overlay.gif" alt="3-second clip of the leftCamera video with DLC pose markers overlaid, showing the mouse running during a high-locomotion bout">
       <p class="figure-caption">
-        <strong>What the mouse is doing.</strong> 3-second clip from the leftCamera of
+        <strong>What the mouse is doing.</strong> Here is a 3-second clip from the leftCamera of
         the focal V1+CB session, with DeepLabCut pose markers overlaid (pupil corners,
         whisker pad, paw, tongue, nose). The mouse is in a head-fixed running bout.
-        The behavioural covariates the GLM and pCCA Z-matrix consume — wheel velocity,
+        The behavioral covariates the GLM and pCCA Z-matrix consume — wheel velocity,
         whisker motion energy, pupil diameter, lick rate — are all derived from this
         stream + the wheel encoder.
       </p>
@@ -228,7 +226,7 @@
       <p class="figure-caption">
         <strong>What one session looks like.</strong> 60 seconds of session
         <code>41431f53</code> (subject <code>CSH_ZAD_022</code>, ~88 min total).
-        Top three rows: behavioural covariates on a 20-ms grid (wheel velocity,
+        Top three rows: behavioral covariates on a 20-ms grid (wheel velocity,
         whisker motion energy, pupil diameter). Bottom two rows: spike rasters
         from the two simultaneously recorded probes — 63 V1 units (blue) and 46
         cerebellar units (red). Wheel velocity and motion energy track each other
@@ -240,8 +238,8 @@
   <div class="container reveal">
     <p>
       A single session at 20 ms binning has T ≈ 263&nbsp;000 time bins, ~50–100 sorted
-      units per region, ~22&nbsp;M spike events total. Time is plentiful; what's
-      <em>scarce</em> is simultaneous dual-region coverage — the IBL probe-placement
+      units per region, ~22&nbsp;M spike events total. Time is plentiful, while what's
+      <em>rare</em> is the simultaneous dual-region coverage — the IBL probe-placement
       protocol is independent across sessions, so the number of sessions containing
       both regions of any given pair is small and outside our control.
     </p>
@@ -279,15 +277,15 @@
     <p class="section-label">The method</p>
     <h2>Per-neuron, within-region, cross-region, residual</h2>
     <p>
-      The pipeline moves down a ladder of geometric resolution. The GLM gives a
-      per-neuron scalar — how much spike-count variance lives along the movement
-      regressors — to verify the dataset behaves the way the literature predicts.
+      The pipeline progressed through single-neuron activity to population-level geometric resolution. The GLM gives a
+      per-neuron scalar (how much spike-count variance lives along the movement
+      regressors) to verify the dataset behaves the way the literature predicts.
       SVCA then drops the single-neuron view and asks: what is each region's
       <em>reliable subspace</em> — the axes inside its firing-rate space along which
-      population activity moves reproducibly rather than just floats on noise? CCA
+      population activity moves reproducibly instead of floats on noise? CCA
       asks the cross-region geometric question: which axes inside region A's subspace
       co-rotate with which axes inside region B's, and how strongly? Partial CCA strips
-      out the axes linearly explainable by behaviour and re-asks the same question on
+      out the axes linearly explainable by behavior and re-asks the same question on
       the residual geometry. Dynamics asks what the surviving axes are doing in time —
       whether the shared mode flows from one region to the other and whether it locks
       to task events. The prose below sketches each step in turn; the full math, with
@@ -337,7 +335,7 @@
     </p>
     <p>
       <strong>Within-region SVCA.</strong> The cross-region CCA stage needs two trustworthy
-      low-dimensional summaries — one per region. Naive PCA returns impressive-looking leading
+      low-dimensional summaries — one per region. Naive PCA result is impressive because looking leading
       components on any matrix, including pure noise, when the population is small and the
       time axis is long. To avoid feeding CCA dimensions that wouldn't survive a re-sample,
       we use Stringer et al.'s split-half-cells × split-half-time procedure: components are
@@ -348,9 +346,9 @@
     <p>
       <strong>Partial CCA via Frisch–Waugh–Lovell.</strong> Two regions bathed in the same
       global locomotion + arousal drive will share geometry for trivial reasons — both will
-      carry a behavioural axis, both will look aligned along it. The actual question is
+      carry a behavioral axis and look aligned along it. The actual question is
       whether the two subspaces share <em>any direction</em> that cannot be expressed as a
-      linear function of wheel velocity and pupil diameter. To answer it, we regress each
+      linear function of wheel velocity and pupil diameter. To answer this question, we regress each
       region's SVCA scores on Z, take the residuals — the components of each region's state
       orthogonal to the behavioural axes — and fit CCA on those residuals. Both the
       regression and the CCA fits are estimated on training folds only and applied to
@@ -376,7 +374,7 @@
     <p class="section-label">Result 1</p>
     <h2>Per-region encoding reproduces the published ranking</h2>
     <p>
-      We refit the per-neuron Ridge generalised linear model (raised-cosine task and
+      We refit the per-neuron Ridge generalized linear model (raised-cosine task and
       movement kernels, leave-one-group-out cross-validated ΔR²) used by the IBL
       collaboration (2025) and Wang &amp; Druckmann (2026), on the expanded
       4,886-neuron sample.
@@ -465,7 +463,7 @@
     <h2>The cross-pair convergence in survival ratio is not three identical measurements</h2>
     <p>
       Two further observations bear on how Fig.&nbsp;2 should be read. First, SVCA
-      reliability — the cross-validated reproducibility of each population component —
+      reliability (the cross-validated reproducibility of each population component)
       is highly asymmetric across pairs.
     </p>
   </div>
@@ -486,7 +484,7 @@
       $\rho_1^{\text{SVCA}} \approx 0.76$, with several sessions clearing
       Stringer&nbsp;<em>et&nbsp;al.</em>'s 2019 $\rho_1 = 0.5$ threshold on multiple
       components). Visual cortex and motor cortex on every other pair-session sit at
-      $\rho_1 \approx 0.20$–$0.25$; the V1↔M1 pair has uniformly poor reliability on both
+      $\rho_1 \approx 0.20$–$0.25$; the V1↔M1 pair has a uniformly bad reliability on both
       sides. The CCA on V1↔CB is therefore being computed between a noisy V1 score and a
       relatively clean CB score, with the cerebellar side carrying the recoverable
       structure.
@@ -553,8 +551,8 @@
     <p>
       Median survival drops in every pair: V1↔CB to 0.85 (Δ&nbsp;=&nbsp;0.11), V1↔M1 to
       0.76 (Δ&nbsp;=&nbsp;0.19), CB↔M1 to 0.69 (Δ&nbsp;=&nbsp;0.29). The earlier 0.97 was
-      therefore over-stated as a measure of behavioural orthogonality. About a tenth to a
-      third of what looked like non-behavioural cross-region coupling under the narrower
+      therefore over-stated as a measure of behavioral orthogonality. About a tenth to a
+      third of what looked like non-behavioral cross-region coupling under the narrower
       probe was uninstructed-movement variance that wheel and pupil simply did not record.
     </p>
     <p>
@@ -563,12 +561,12 @@
       magnitude of the drop is loosely anti-correlated with raw signal magnitude (Spearman
       r ≈ −0.5, n = 10): the two sessions with the largest $\sum_k \rho_k^{\text{CCA}}$
       lose only 0.02–0.03 of survival, while the session with the smallest
-      $\sum_k \rho_k^{\text{CCA}}$ loses 0.27. The reverse pattern — strong-signal sessions
-      losing <em>more</em> — would have been the prediction if cross-region coupling were
-      uniformly behaviour-driven and merely inflated on the strong sessions by capturing
-      more behavioural variance. The observed direction, with the appropriate small-n
+      $\sum_k \rho_k^{\text{CCA}}$ loses 0.27. The reverse pattern (strong-signal sessions
+      losing <em>more</em>) would have been the prediction if cross-region coupling were
+      uniformly behavior-driven and merely inflated on the strong sessions by capturing
+      more behavioral variance. The observed direction, with the appropriate small-n
       caveat, is consistent with the strongest cross-region shared structure being the
-      structure least explained by even the richer behavioural channels.
+      structure least explained by even the richer behavioral channels.
     </p>
   </div>
 </section>
@@ -673,11 +671,11 @@
       The five preceding results live as scalars: ΔR² distributions, canonical
       correlations, survival ratios, lag-of-peak, peri-event amplitude. Numbers
       can rank, but they do not let the reader <em>see</em> what the shared
-      geometry is doing. Two pictures below turn the central claim — three
-      pairs reach similar survival through different geometric mechanisms —
+      geometry is doing. Two figures below turn the central claim (three
+      pairs reach similar survival through different geometric mechanisms)
       from a sentence into a shape, and add one piece of information the
       scalar analyses cannot give us: the shape persists under partialling, but
-      <em>what that shape means about behaviour</em> does not.
+      <em>what that shape means about behavior</em> does not.
     </p>
   </div>
 
@@ -698,7 +696,7 @@
       cloud is the geometry of the shared mode.
     </p>
     <p>
-      The shape alone, however, says nothing about what the shared mode is
+      The shape alone, however, demonstrate no much information about what the shared mode is
       <em>about</em>. So we colour each pixel of the 2-D histogram by the
       mean wheel velocity (z-scored) of the time bins that fall into it. If
       the shared mode is, in essence, the running-versus-quiet axis, the
@@ -707,13 +705,13 @@
       the mouse is running (red): the cloud develops a clear blue-to-red
       gradient along its long axis. If the shared mode is not primarily
       about running, the wheel velocity is distributed indiscriminately
-      across positions in the cloud and the colour is uniform grey. The
+      across positions in the cloud and the color is uniform grey. The
       <strong>shape</strong> tells us whether the geometry survives; the
       <strong>gradient</strong> tells us how much of that geometry was the
       wheel axis to begin with.
     </p>
     <p>
-      The left column of Figure&nbsp;7 shows the raw CCA — no behavioural
+      The left column of Figure&nbsp;7 shows the raw CCA — no behavioral
       partialling. All three pairs carry a non-trivial wheel-velocity
       gradient: positions along the leading shared canonical axis are
       partly diagnostic of how fast the mouse was moving. The signed slope
